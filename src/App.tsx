@@ -1,14 +1,14 @@
-import Gdrive from "./cloud/Gdrive";
-import Folders from "./Folders";
+import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
+import Home from "./pages/Home";
 
-export default function App() {
-    return (
-        <div>
-            <h1>Link an account</h1>
-            <div id="providers">
-                <Gdrive></Gdrive>
-            </div>
-            <Folders />
-        </div>
-    )
-}
+const App = () =>
+    <>
+        <BrowserRouter>
+            <Routes>
+                <Route path="/" element={<Home />} />
+                <Route path="/*" element={<Navigate to={"/"} />} />
+            </Routes>
+        </BrowserRouter>
+    </>
+
+export default App
