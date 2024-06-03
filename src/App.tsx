@@ -1,4 +1,5 @@
 import Gdrive from "./cloud/Gdrive";
+import Folders from "./Folders";
 
 export default function App() {
     return (
@@ -7,6 +8,7 @@ export default function App() {
             <div id="providers">
                 <Gdrive></Gdrive>
             </div>
+            <Folders />
         </div>
     )
 }
