@@ -31,4 +31,4 @@ import App from './App';
 import { createRoot } from "react-dom/client"
 
 console.log('👋 This message is being logged by "renderer.ts", included via Vite');
-createRoot(document.body).render(App())
+createRoot(document.getElementById("root")).render(App())
