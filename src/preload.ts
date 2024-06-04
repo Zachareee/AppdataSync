@@ -3,6 +3,7 @@
 import { contextBridge, ipcRenderer } from "electron"
 import { APIFunctions } from "./APIFunctions"
 
-contextBridge.exposeInMainWorld("api", {
-    listAppdataFolders: () => ipcRenderer.invoke("files"),
-} as APIFunctions)
+const funcs: APIFunctions = {
+    listAppdataFolders: () => ipcRenderer.invoke("files")
+}
+contextBridge.exposeInMainWorld("api", funcs)
