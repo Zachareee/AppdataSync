@@ -39,7 +39,7 @@ export class GDrive {
 }
 
 // If modifying these scopes, delete token.json.
-const SCOPES = ['https://www.googleapis.com/auth/drive.metadata.readonly'];
+const SCOPES = ['https://www.googleapis.com/auth/drive.file'];
 // The file token.json stores the user's access and refresh tokens, and is
 // created automatically when the authorization flow completes for the first
 // time.
@@ -52,13 +52,9 @@ const CREDENTIALS_PATH = path.join(process.cwd(), 'credentials/GAPI.json');
  * @return {Promise<OAuth2Client|null>}
  */
 async function loadSavedCredentialsIfExist() {
-    try {
-        const content = await fs.readFile(TOKEN_PATH, "ascii");
-        const credentials = JSON.parse(content);
-        return <OAuth2Client>auth.fromJSON(credentials);
-    } catch (err) {
-        return null;
-    }
+    const content = await fs.readFile(TOKEN_PATH, "ascii");
+    const credentials = JSON.parse(content);
+    return <OAuth2Client>auth.fromJSON(credentials);
 }
 
 /**
@@ -68,6 +64,7 @@ async function loadSavedCredentialsIfExist() {
  * @return {Promise<void>}
  */
 async function saveCredentials(client: OAuth2Client) {
+    if (!client.credentials) return client
     const content = await fs.readFile(CREDENTIALS_PATH, "ascii");
     const keys = JSON.parse(content);
     const { client_id, client_secret } = keys.installed || keys.web;
@@ -78,23 +75,20 @@ async function saveCredentials(client: OAuth2Client) {
         refresh_token: client.credentials.refresh_token,
     });
     await fs.writeFile(TOKEN_PATH, payload);
+    return client
 }
 
 /**
- * Lists the names and IDs of up to 10 files.
- * @param {OAuth2Client} authClient An authorized OAuth2 client.
+ * Load or request or authorization to call APIs.
+ *
  */
 async function authorize() {
-    let client: OAuth2Client = await loadSavedCredentialsIfExist();
-    if (client) {
-        return client;
+    try {
+        return loadSavedCredentialsIfExist();
+    } catch {
+        return authenticate({
+            scopes: SCOPES,
+            keyfilePath: CREDENTIALS_PATH,
+        }).then(saveCredentials)
     }
-    client = await authenticate({
-        scopes: SCOPES,
-        keyfilePath: CREDENTIALS_PATH,
-    });
-    if (client.credentials) {
-        await saveCredentials(client);
-    }
-    return client;
 }
