@@ -1,9 +1,9 @@
 import Folders from "../components/Folders";
-import { listDriveFiles } from "../APIFunctions"
+import { showCloudFiles } from "../common"
 
 export default function Home() {
     return <>
-        <button onClick={listDriveFiles}>List files</button>
+        <button onClick={showCloudFiles}>List files</button>
         <Folders />
     </>
 }

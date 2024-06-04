@@ -1,8 +1,8 @@
-import ImagePath from "../img/GoogleDriveIcon.svg"
+import img from "../img/GoogleDriveIcon.svg"
 
 export default function GDriveLogin() {
     return <div>
-        <ImagePath/>
+        <img src={img} alt="Google Drive icon"/>
         Login with Google Drive
     </div>
 }

@@ -2,26 +2,28 @@ import { promises as fs } from "fs"
 import { drive, drive_v3 } from "@googleapis/drive";
 import { authenticate } from "@google-cloud/local-auth";
 import { OAuth2Client, auth } from "google-auth-library"
-
 import path from "path"
 import { app } from "electron";
 
-export class GDrive {
+import { CloudProvider } from "../common";
+
+export class GDrive extends CloudProvider {
     private static authClient: OAuth2Client
 
-    static async init() {
+    static override async init() {
         GDrive.authClient = await authorize()
+        return GDrive
     }
 
     /**
      * Lists the names and IDs of up to 10 files.
      * @param {OAuth2Client} authClient An authorized OAuth2 client.
      */
-    static async listFiles() {
+    static override async listFiles() {
         const gDrive: drive_v3.Drive = drive({ version: 'v3', auth: GDrive.authClient });
         const res = await gDrive.files.list({
             pageSize: 10,
-            fields: 'nextPageToken, files(id, name)',
+            fields: 'nextpagetoken, files(id, name)',
         });
         const files = res.data.files;
         if (files.length === 0) {
@@ -43,7 +45,7 @@ const SCOPES = ['https://www.googleapis.com/auth/drive.file'];
 // The file token.json stores the user's access and refresh tokens, and is
 // created automatically when the authorization flow completes for the first
 // time.
-const TOKEN_PATH = path.join(app.getPath("appData"), 'appdatasync/googleDriveAuth.json');
+const TOKEN_PATH = path.join(app.getPath("appData"), 'appdatasync/credentials/googleDriveAuth.json');
 const CREDENTIALS_PATH = path.join(process.cwd(), 'credentials/GAPI.json');
 
 /**
@@ -84,7 +86,7 @@ async function saveCredentials(client: OAuth2Client) {
  */
 async function authorize() {
     try {
-        return loadSavedCredentialsIfExist();
+        return await loadSavedCredentialsIfExist();
     } catch {
         return authenticate({
             scopes: SCOPES,
