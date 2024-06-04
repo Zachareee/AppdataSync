@@ -1,6 +1,7 @@
 import { app, BrowserWindow, ipcMain } from 'electron';
 import path from 'path';
 import fs from "fs"
+import { GDrive } from './cloud/gdriveutils';
 
 // Handle creating/removing shortcuts on Windows when installing/uninstalling.
 if (require('electron-squirrel-startup')) {
@@ -54,3 +55,6 @@ app.on('activate', () => {
 // In this file you can include the rest of your app's specific main process
 // code. You can also put them in separate files and import them here.
 ipcMain.handle("files", () => fs.readdirSync(app.getPath("appData")))
+GDrive.init().then(() => {
+  ipcMain.handle("gdrive", GDrive.listFiles)
+})
