@@ -25,7 +25,7 @@ export class GDrive extends CloudProvider {
         const gDrive: drive_v3.Drive = drive({ version: 'v3', auth: GDrive.authClient });
         const res = await gDrive.files.list({
             pageSize: 10,
-            fields: 'nextpagetoken, files(id, name)',
+            fields: 'nextPageToken, files(id, name)',
         });
         const files = res.data.files;
         if (files.length === 0) {
@@ -40,6 +40,9 @@ export class GDrive extends CloudProvider {
         return "Hi"
     }
 
+    static override async abortAuth() {
+        fetch("http://localhost:3000").then(data => data.text()).then(() => console.warn("Aborted"))
+    }
 }
 
 // If modifying these scopes, delete token.json.

@@ -1,26 +1,24 @@
 export interface APIFunctions {
     listAppdataFolders(): Promise<any>,
     showCloudFiles(): Promise<any>,
-    chooseProvider(provider: CloudProviderString): void
+    chooseProvider(provider: CloudProviderString): Promise<boolean>,
+    abortAuthentication(): void
 }
 
-export enum IPCSignals {
-    listAppdataFolders = "0",
-    showCloudFiles = "1",
-    chooseProvider = "2"
-}
+export type IPCSignals = "listAppdataFolders" | "showCloudFiles" | "chooseProvider" | "abortAuthentication"
 
 export type CloudProviderString = "googleDrive" | "dropbox"
 
 export class CloudProvider {
     static async init(): Promise<typeof CloudProvider> { return notImplemented() }
     static async listFiles() { return notImplemented() }
+    static async abortAuth() { return notImplemented() }
 }
 
 export const RegisterCloudMethods: {
     [signal in IPCSignals]?: (provider: typeof CloudProvider) => (...args: any) => Promise<any>
 } = {
-    [IPCSignals.showCloudFiles]: (provider) => provider.listFiles,
+    showCloudFiles: (provider) => provider.listFiles,
 }
 
 async function notImplemented(): Promise<any> {

@@ -1,8 +1,9 @@
-import { app, BrowserWindow, ipcMain } from 'electron';
+import { app, BrowserWindow, ipcMain, IpcMainEvent } from 'electron';
 import path from 'path';
-import fs from "fs"
+import { promises as fs } from "fs"
 import { GDrive } from './cloud/GDrive';
 import { CloudProvider, CloudProviderString, IPCSignals, RegisterCloudMethods } from './common';
+import { PROVIDER_SETTING, TOKEN_FOLDER } from './utils/mainutils';
 
 // Handle creating/removing shortcuts on Windows when installing/uninstalling.
 if (require('electron-squirrel-startup')) {
@@ -26,6 +27,10 @@ const createWindow = () => {
   } else {
     mainWindow.loadFile(path.join(__dirname, `../renderer/${MAIN_WINDOW_VITE_NAME}/index.html`));
   }
+
+  fs.readFile(PROVIDER_SETTING, "ascii")
+    .then(provider => mainWindow.webContents.send("provider", provider))
+    .catch(() => { console.warn("No provider file") })
 
   // Open the DevTools.
   mainWindow.webContents.openDevTools();
@@ -56,18 +61,35 @@ app.on('activate', () => {
 // In this file you can include the rest of your app's specific main process
 // code. You can also put them in separate files and import them here.
 
+// Create AppdataSync folder
+fs.mkdir(TOKEN_FOLDER, { recursive: true })
+
 // Read Appdata folders
-ipcMain.handle(IPCSignals.listAppdataFolders, () => fs.readdirSync(app.getPath("appData")))
+handle("listAppdataFolders", async () => await fs.readdir(app.getPath("appData")))
 
 // Registers cloud methods
-ipcMain.on(IPCSignals.chooseProvider, (event, provider: CloudProviderString) => {
-  selectProvider(provider)?.init().then(FS => {
+handle("chooseProvider", async (event, provider: CloudProviderString) => {
+  fs.writeFile(PROVIDER_SETTING, provider)
+  return selectProvider(provider)?.init().then(FS => {
     for (const signal in RegisterCloudMethods) {
       ipcMain.removeHandler(signal)
-      ipcMain.handle(signal, RegisterCloudMethods[signal](FS))
+      ipcMain.handle(signal, RegisterCloudMethods[<IPCSignals>signal](FS))
     }
-  })
+  }).then(() => true).catch(() => false)
 })
+
+on("abortAuthentication", async () => {
+  selectProvider(<CloudProviderString>await fs.readFile(PROVIDER_SETTING, "ascii")).abortAuth()
+  fs.rm(PROVIDER_SETTING)
+})
+
+function handle(signal: IPCSignals, func: (event: IpcMainEvent, ...args: any[]) => any) {
+  return ipcMain.handle(signal, func)
+}
+
+function on(signal: IPCSignals, func: (event: IpcMainEvent, ...args: any[]) => any) {
+  return ipcMain.on(signal, func)
+}
 
 function selectProvider(provider: CloudProviderString): typeof CloudProvider {
   switch (provider) {
