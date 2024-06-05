@@ -1,5 +1,5 @@
 import Folders from "../components/Folders";
-import { showCloudFiles } from "../common"
+import { showCloudFiles } from "../utils/windowutils"
 
 export default function Home() {
     return <>

@@ -3,9 +3,11 @@ import { drive, drive_v3 } from "@googleapis/drive";
 import { authenticate } from "@google-cloud/local-auth";
 import { OAuth2Client, auth } from "google-auth-library"
 import path from "path"
-import { app } from "electron";
 
 import { CloudProvider } from "../common";
+import { TOKEN_FOLDER } from "../utils/mainutils";
+
+const TOKEN_PATH = `${TOKEN_FOLDER}/googleDriveAuth.json`
 
 export class GDrive extends CloudProvider {
     private static authClient: OAuth2Client
@@ -45,7 +47,6 @@ const SCOPES = ['https://www.googleapis.com/auth/drive.file'];
 // The file token.json stores the user's access and refresh tokens, and is
 // created automatically when the authorization flow completes for the first
 // time.
-const TOKEN_PATH = path.join(app.getPath("appData"), 'appdatasync/credentials/googleDriveAuth.json');
 const CREDENTIALS_PATH = path.join(process.cwd(), 'credentials/GAPI.json');
 
 /**
@@ -76,6 +77,7 @@ async function saveCredentials(client: OAuth2Client) {
         client_secret,
         refresh_token: client.credentials.refresh_token,
     });
+    await fs.mkdir(TOKEN_FOLDER)
     await fs.writeFile(TOKEN_PATH, payload);
     return client
 }

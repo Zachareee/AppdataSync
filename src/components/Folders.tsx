@@ -1,5 +1,5 @@
 import { useState } from "react"
-import { listAppdataFolders } from "../common"
+import { listAppdataFolders } from "../utils/windowutils"
 
 export default function Folders() {
     const [files, setFiles] = useState<string[]>([])

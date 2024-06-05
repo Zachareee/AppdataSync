@@ -1,10 +1,20 @@
+import { chooseProvider } from "../utils/windowutils";
 import GDriveLogin from "../cloud/GDriveLogin";
+import { CloudProviderString } from "../common";
 
 export default function CloudSelect() {
     return (
         <div>
             <h1>Choose your cloud provider</h1>
-            <GDriveLogin />
+            {Object.entries(providers).map(([provider, elem]) =>
+                <button onClick={() => chooseProvider(provider as CloudProviderString)}>
+                    {elem()}
+                </button>
+            )}
         </div>
     )
+}
+
+const providers: {[provider: string]: () => JSX.Element} = {
+    "googleDrive": GDriveLogin
 }

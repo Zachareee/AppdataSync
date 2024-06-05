@@ -4,19 +4,23 @@ export interface APIFunctions {
     chooseProvider(provider: CloudProviderString): void
 }
 
-export const { listAppdataFolders, showCloudFiles, chooseProvider }: APIFunctions = window.api
-
 export enum IPCSignals {
     listAppdataFolders = "0",
     showCloudFiles = "1",
     chooseProvider = "2"
 }
 
-export type CloudProviderString = "googleDrive"
+export type CloudProviderString = "googleDrive" | "dropbox"
 
 export class CloudProvider {
     static async init(): Promise<typeof CloudProvider> { return notImplemented() }
     static async listFiles() { return notImplemented() }
+}
+
+export const RegisterCloudMethods: {
+    [signal: string]: (provider: typeof CloudProvider) => (...args: any) => Promise<any>
+} = {
+    [IPCSignals.showCloudFiles]: (provider) => provider.listFiles
 }
 
 async function notImplemented(): Promise<any> {

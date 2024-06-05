@@ -2,7 +2,7 @@ import { app, BrowserWindow, ipcMain } from 'electron';
 import path from 'path';
 import fs from "fs"
 import { GDrive } from './cloud/GDrive';
-import { CloudProvider, CloudProviderString, IPCSignals } from './common';
+import { CloudProvider, CloudProviderString, IPCSignals, RegisterCloudMethods } from './common';
 
 // Handle creating/removing shortcuts on Windows when installing/uninstalling.
 if (require('electron-squirrel-startup')) {
@@ -55,10 +55,17 @@ app.on('activate', () => {
 
 // In this file you can include the rest of your app's specific main process
 // code. You can also put them in separate files and import them here.
+
+// Read Appdata folders
 ipcMain.handle(IPCSignals.listAppdataFolders, () => fs.readdirSync(app.getPath("appData")))
+
+// Registers cloud methods
 ipcMain.on(IPCSignals.chooseProvider, (event, provider: CloudProviderString) => {
   selectProvider(provider)?.init().then(FS => {
-    ipcMain.handle(IPCSignals.showCloudFiles, FS.listFiles)
+    for (const signal in RegisterCloudMethods) {
+      ipcMain.removeHandler(signal)
+      ipcMain.handle(signal, RegisterCloudMethods[signal](FS))
+    }
   })
 })
 
@@ -67,4 +74,6 @@ function selectProvider(provider: CloudProviderString): typeof CloudProvider {
     case "googleDrive":
       return GDrive
   }
+
+  return null
 }
