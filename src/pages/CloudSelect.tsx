@@ -15,6 +15,6 @@ export default function CloudSelect() {
     )
 }
 
-const providers: {[provider: string]: () => JSX.Element} = {
-    "googleDrive": GDriveLogin
+const providers: {[provider in CloudProviderString]?: () => JSX.Element} = {
+    "googleDrive": GDriveLogin,
 }

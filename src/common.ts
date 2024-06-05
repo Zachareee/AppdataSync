@@ -18,9 +18,9 @@ export class CloudProvider {
 }
 
 export const RegisterCloudMethods: {
-    [signal: string]: (provider: typeof CloudProvider) => (...args: any) => Promise<any>
+    [signal in IPCSignals]?: (provider: typeof CloudProvider) => (...args: any) => Promise<any>
 } = {
-    [IPCSignals.showCloudFiles]: (provider) => provider.listFiles
+    [IPCSignals.showCloudFiles]: (provider) => provider.listFiles,
 }
 
 async function notImplemented(): Promise<any> {
