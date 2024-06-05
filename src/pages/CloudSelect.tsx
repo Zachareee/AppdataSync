@@ -27,15 +27,17 @@ export default function CloudSelect() {
             <button onClick={abort}>Go back to selection page</button>
         </div>
     ) : (
-        <div>
-            <h1>Choose your cloud provider</h1 >
-            {
-                Object.entries(providers).map(([provider, elem], key) =>
-                    <button onClick={() => choose(provider as CloudProviderString)} key={key}>
-                        {elem()}
-                    </button>
-                )
-            }
+        <div className="flex flex-col items-center">
+            <h1>Choose your cloud provider</h1>
+            <div className="flex justify-center min-w-[50%]">
+                {
+                    Object.entries(providers).map(([provider, elem], key) =>
+                        <div className="flex justify-center items-center border-2 border-black rounded-xl cursor-pointer w-max justify-between" onClick={() => choose(provider as CloudProviderString)} key={key}>
+                            {elem()}
+                        </div>
+                    )
+                }
+            </div>
         </div >
     )
 }
