@@ -5,11 +5,11 @@ export default function Home() {
     const location = useLocation()
 
     const { state: { provider } } = location
-    return <>
+    return <div className="bg-blue-950 flex flex-col items-center">
         {/* <button onClick={showCloudFiles}>List files</button> */}
-        <span>Current provider: {provider}</span>
+        <span className="text-slate-300">Current provider: {provider}</span>
         <Folders />
-    </>
+    </div>
 }
 
 export const homePath = "home"
