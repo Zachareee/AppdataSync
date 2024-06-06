@@ -1,4 +1,4 @@
-import { app, BrowserWindow, ipcMain, IpcMainEvent } from 'electron';
+import { app, BrowserWindow, ipcMain, IpcMainEvent, WebContents } from 'electron';
 import path from 'path';
 import { promises as fs } from "fs"
 import { GDrive } from './cloud/GDrive';
@@ -28,11 +28,12 @@ const createWindow = () => {
     mainWindow.loadFile(path.join(__dirname, `../renderer/${MAIN_WINDOW_VITE_NAME}/index.html`));
   }
 
-  fs.readFile(PROVIDER_SETTING, "ascii")
-    .then((provider: CloudProviderString) => registerProvider(provider).then(bool => {
-      if (bool) mainWindow.webContents.send("provider", provider)
-    })
-    ).catch(() => { console.warn("No provider file") })
+  mainWindow.webContents.addListener("did-finish-load", () => {
+
+    fs.readFile(PROVIDER_SETTING, "ascii")
+      .then((provider: CloudProviderString) => registerProvider(mainWindow.webContents, provider)
+      ).catch(() => { console.warn("No provider file") })
+  })
 
   // Open the DevTools.
   mainWindow.webContents.openDevTools();
@@ -70,9 +71,9 @@ fs.mkdir(TOKEN_FOLDER, { recursive: true })
 handle("listAppdataFolders", async () => await fs.readdir(app.getPath("appData")))
 
 // Registers cloud methods
-handle("chooseProvider", async (event, provider: CloudProviderString) => {
+on("requestProvider", async (event, provider: CloudProviderString) => {
   fs.writeFile(PROVIDER_SETTING, provider)
-  return registerProvider(provider)
+  return registerProvider(event.sender, provider)
 })
 
 on("abortAuthentication", async () => {
@@ -80,13 +81,13 @@ on("abortAuthentication", async () => {
   fs.rm(PROVIDER_SETTING)
 })
 
-async function registerProvider(provider: CloudProviderString) {
+async function registerProvider(webContents: WebContents, provider: CloudProviderString) {
   return selectProvider(provider)?.init().then(FS => {
     for (const signal in RegisterCloudMethods) {
       ipcMain.removeHandler(signal)
       ipcMain.handle(signal, RegisterCloudMethods[<IPCSignals>signal](FS))
     }
-  }).then(() => true).catch((e) => {console.warn(e); return false})
+  }).then(() => webContents.send("replyProvider", provider)).catch(console.warn)
 }
 
 function handle(signal: IPCSignals, func: (event: IpcMainEvent, ...args: any[]) => any) {

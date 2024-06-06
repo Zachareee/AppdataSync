@@ -6,18 +6,14 @@ import { APIFunctions, CloudProviderString, IPCSignals } from "./common"
 const funcs: APIFunctions = {
     listAppdataFolders: () => invoke("listAppdataFolders"),
     showCloudFiles: () => invoke("showCloudFiles"),
-    chooseProvider: provider => invoke("chooseProvider", provider),
+    requestProvider: provider => send("requestProvider", provider),
     abortAuthentication: () => send("abortAuthentication"),
 }
 contextBridge.exposeInMainWorld("api", funcs)
-contextBridge.exposeInMainWorld("provider", { runOnProviderCall })
+contextBridge.exposeInMainWorld("provider", { runOnProviderReply })
 
-ipcRenderer.on("provider", (event: IpcRendererEvent, PROVIDER: CloudProviderString) => {
-    contextBridge.exposeInMainWorld("provider", { PROVIDER })
-})
-
-function runOnProviderCall(func: (provider: CloudProviderString) => void) {
-    ipcRenderer.on("provider", (event: IpcRendererEvent, provider: CloudProviderString) => {
+function runOnProviderReply(func: (provider: CloudProviderString) => void) {
+    ipcRenderer.on("replyProvider", (event: IpcRendererEvent, provider: CloudProviderString) => {
         func(provider)
     })
 }

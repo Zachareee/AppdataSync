@@ -1,6 +1,6 @@
 import { useNavigate } from "react-router-dom";
 
-import { abortAuthentication, chooseProvider, runOnProviderCall } from "../utils/windowutils";
+import { abortAuthentication, requestProvider, runOnProviderReply } from "../utils/windowutils";
 import GDriveLogin from "../cloud/GDriveLogin";
 import { CloudProviderString } from "../common";
 import { homePath } from "./Home";
@@ -10,26 +10,21 @@ export default function CloudSelect() {
     const navigate = useNavigate()
     const [loading, setLoading] = useState(false)
 
-    runOnProviderCall((provider: CloudProviderString) => gotoHome(provider))
+    runOnProviderReply((provider: CloudProviderString) => gotoHome(provider))
 
     function gotoHome(provider: CloudProviderString) {
         navigate(homePath, { replace: true, state: { provider } })
     }
 
-    async function choose(provider: CloudProviderString) {
+    function choose(provider: CloudProviderString) {
         setLoading(true)
-        if (await chooseProvider(provider)) gotoHome(provider)
-        else setLoading(false)
-    }
-
-    function abort() {
-        abortAuthentication()
+        requestProvider(provider)
     }
 
     return loading ? (
         <div>
             <h1>Waiting to authenticate</h1>
-            <button onClick={abort}>Go back to selection page</button>
+            <button onClick={abortAuthentication}>Go back to selection page</button>
         </div>
     ) : (
         <div className="flex flex-col items-center">

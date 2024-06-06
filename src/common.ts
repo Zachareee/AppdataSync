@@ -1,7 +1,7 @@
 export interface APIFunctions {
     listAppdataFolders(): Promise<any>,
     showCloudFiles(): Promise<any>,
-    chooseProvider(provider: CloudProviderString): Promise<boolean>,
+    requestProvider(provider: CloudProviderString): void,
     abortAuthentication(): void
 }
 
