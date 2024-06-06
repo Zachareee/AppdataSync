@@ -4,16 +4,23 @@ import { abortAuthentication, chooseProvider } from "../utils/windowutils";
 import GDriveLogin from "../cloud/GDriveLogin";
 import { CloudProviderString } from "../common";
 import { homePath } from "./Home";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 export default function CloudSelect() {
     const navigate = useNavigate()
     const [loading, setLoading] = useState(false)
 
+    useEffect(() => {
+        if (window.provider?.PROVIDER) gotoHome(window.provider.PROVIDER)
+    }, [window.provider])
+
+    function gotoHome(provider: CloudProviderString) {
+        navigate(homePath, { replace: true, state: { provider } })
+    }
+
     async function choose(provider: CloudProviderString) {
         setLoading(true)
-        if (await chooseProvider(provider))
-            navigate(homePath, { replace: true, state: { provider } })
+        if (await chooseProvider(provider)) gotoHome(provider)
     }
 
     function abort() {

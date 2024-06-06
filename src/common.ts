@@ -5,7 +5,7 @@ export interface APIFunctions {
     abortAuthentication(): void
 }
 
-export type IPCSignals = "listAppdataFolders" | "showCloudFiles" | "chooseProvider" | "abortAuthentication"
+export type IPCSignals = keyof APIFunctions
 
 export type CloudProviderString = "googleDrive" | "dropbox"
 
