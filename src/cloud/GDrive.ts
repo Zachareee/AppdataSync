@@ -80,8 +80,8 @@ async function saveCredentials(client: OAuth2Client) {
         client_secret,
         refresh_token: client.credentials.refresh_token,
     });
-    await fs.mkdir(TOKEN_FOLDER)
-    await fs.writeFile(TOKEN_PATH, payload);
+    await fs.mkdir(TOKEN_FOLDER, { recursive: true })
+    await fs.writeFile(TOKEN_PATH, payload)
     return client
 }
 

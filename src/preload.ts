@@ -10,10 +10,17 @@ const funcs: APIFunctions = {
     abortAuthentication: () => send("abortAuthentication"),
 }
 contextBridge.exposeInMainWorld("api", funcs)
+contextBridge.exposeInMainWorld("provider", { runOnProviderCall })
 
 ipcRenderer.on("provider", (event: IpcRendererEvent, PROVIDER: CloudProviderString) => {
     contextBridge.exposeInMainWorld("provider", { PROVIDER })
 })
+
+function runOnProviderCall(func: (provider: CloudProviderString) => void) {
+    ipcRenderer.on("provider", (event: IpcRendererEvent, provider: CloudProviderString) => {
+        func(provider)
+    })
+}
 
 function invoke(signal: IPCSignals, ...args: any) {
     return ipcRenderer.invoke(signal, ...args)

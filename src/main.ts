@@ -29,8 +29,10 @@ const createWindow = () => {
   }
 
   fs.readFile(PROVIDER_SETTING, "ascii")
-    .then(provider => mainWindow.webContents.send("provider", provider))
-    .catch(() => { console.warn("No provider file") })
+    .then((provider: CloudProviderString) => registerProvider(provider).then(bool => {
+      if (bool) mainWindow.webContents.send("provider", provider)
+    })
+    ).catch(() => { console.warn("No provider file") })
 
   // Open the DevTools.
   mainWindow.webContents.openDevTools();
@@ -70,18 +72,22 @@ handle("listAppdataFolders", async () => await fs.readdir(app.getPath("appData")
 // Registers cloud methods
 handle("chooseProvider", async (event, provider: CloudProviderString) => {
   fs.writeFile(PROVIDER_SETTING, provider)
-  return selectProvider(provider)?.init().then(FS => {
-    for (const signal in RegisterCloudMethods) {
-      ipcMain.removeHandler(signal)
-      ipcMain.handle(signal, RegisterCloudMethods[<IPCSignals>signal](FS))
-    }
-  }).then(() => true).catch(() => false)
+  return registerProvider(provider)
 })
 
 on("abortAuthentication", async () => {
   selectProvider(<CloudProviderString>await fs.readFile(PROVIDER_SETTING, "ascii")).abortAuth()
   fs.rm(PROVIDER_SETTING)
 })
+
+async function registerProvider(provider: CloudProviderString) {
+  return selectProvider(provider)?.init().then(FS => {
+    for (const signal in RegisterCloudMethods) {
+      ipcMain.removeHandler(signal)
+      ipcMain.handle(signal, RegisterCloudMethods[<IPCSignals>signal](FS))
+    }
+  }).then(() => true).catch((e) => {console.warn(e); return false})
+}
 
 function handle(signal: IPCSignals, func: (event: IpcMainEvent, ...args: any[]) => any) {
   return ipcMain.handle(signal, func)
