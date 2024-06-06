@@ -10,10 +10,10 @@ import { TOKEN_FOLDER } from "../utils/mainutils";
 const TOKEN_PATH = `${TOKEN_FOLDER}/googleDriveAuth.json`
 
 export class GDrive extends CloudProvider {
-    private static authClient: OAuth2Client
+    private static gDrive: drive_v3.Drive
 
     static override async init() {
-        GDrive.authClient = await authorize()
+        GDrive.gDrive = drive({ version: 'v3', auth: await authorize()})
         return GDrive
     }
 
@@ -22,8 +22,7 @@ export class GDrive extends CloudProvider {
      * @param {OAuth2Client} authClient An authorized OAuth2 client.
      */
     static override async listFiles() {
-        const gDrive: drive_v3.Drive = drive({ version: 'v3', auth: GDrive.authClient });
-        const res = await gDrive.files.list({
+        const res = await GDrive.gDrive.files.list({
             pageSize: 10,
             fields: 'nextPageToken, files(id, name)',
         });
