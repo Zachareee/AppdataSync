@@ -1,10 +1,12 @@
 import GoogleDrive from "./img/GoogleDriveIcon.svg"
 
 export interface APIFunctions {
-    listAppdataFolders(): Promise<string[]>,
-    showCloudFiles(): Promise<any>,
-    requestProvider(provider: CloudProviderString): void,
+    listAppdataFolders(): Promise<string[]>
+    showCloudFiles(): Promise<any>
+    requestProvider(provider: CloudProviderString): void
     abortAuthentication(): void
+    logout(provider: CloudProviderString): void
+    accountsAuthed(): Promise<CloudProviderString[]>
 }
 
 export type IPCSignals = keyof APIFunctions
@@ -15,12 +17,14 @@ export class CloudProvider {
     static async init(): Promise<typeof CloudProvider> { return notImplemented() }
     static async listFiles() { return notImplemented() }
     static async abortAuth() { return notImplemented() }
+    static async logout() { return notImplemented() }
 }
 
 export const RegisterCloudMethods: {
     [signal in IPCSignals]?: (provider: typeof CloudProvider) => (...args: any) => Promise<any>
 } = {
     showCloudFiles: (provider) => provider.listFiles,
+    logout: (provider) => provider.logout
 }
 
 export type ProviderContents = {

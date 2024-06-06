@@ -8,6 +8,8 @@ const funcs: APIFunctions = {
     showCloudFiles: () => invoke("showCloudFiles"),
     requestProvider: provider => send("requestProvider", provider),
     abortAuthentication: () => send("abortAuthentication"),
+    logout: (provider) => send("logout", provider),
+    accountsAuthed: () => invoke("accountsAuthed")
 }
 contextBridge.exposeInMainWorld("api", funcs)
 contextBridge.exposeInMainWorld("provider", { runOnProviderReply })

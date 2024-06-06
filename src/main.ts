@@ -2,8 +2,8 @@ import { app, BrowserWindow, ipcMain, IpcMainEvent, WebContents } from 'electron
 import path from 'path';
 import { promises as fs } from "fs"
 import { GDrive } from './cloud/GDrive';
-import { CloudProvider, CloudProviderString, IPCSignals, RegisterCloudMethods } from './common';
-import { PROVIDER_SETTING, TOKEN_FOLDER } from './utils/mainutils';
+import { CloudProvider, CloudProviderString, drives, IPCSignals, RegisterCloudMethods } from './common';
+import { readConfig, TOKEN_FOLDER, writeConfig } from './utils/mainutils';
 
 // Handle creating/removing shortcuts on Windows when installing/uninstalling.
 if (require('electron-squirrel-startup')) {
@@ -35,9 +35,8 @@ const createWindow = () => {
   }
 
   mainWindow.webContents.addListener("did-finish-load", () => {
-    fs.readFile(PROVIDER_SETTING, "ascii")
-      .then((provider: CloudProviderString) => registerProvider(mainWindow.webContents, provider)
-      ).catch(() => { console.warn("No provider file") })
+    readConfig().then(({ provider }) => registerProvider(mainWindow.webContents, provider))
+      .catch(() => { console.warn("No provider file") })
   })
 
   // Open the DevTools.
@@ -77,14 +76,29 @@ handle("listAppdataFolders", async () => await fs.readdir(app.getPath("appData")
 
 // Registers cloud methods
 on("requestProvider", async (event, provider: CloudProviderString) => {
-  fs.writeFile(PROVIDER_SETTING, provider)
+  writeConfig("provider", provider)
   return registerProvider(event.sender, provider)
 })
 
-on("abortAuthentication", async () => {
-  selectProvider(<CloudProviderString>await fs.readFile(PROVIDER_SETTING, "ascii")).abortAuth()
-  fs.rm(PROVIDER_SETTING)
+handle("accountsAuthed", async () => {
+  const providers: CloudProviderString[] = []
+  Object.entries(drives).forEach(
+    async ([provider, { tokenFile }]) => {
+      try {
+        await fs.access(`${TOKEN_FOLDER}/${tokenFile}`)
+        providers.push(<CloudProviderString>provider)
+      } catch { return }
+    })
+
+  return providers
 })
+
+on("abortAuthentication", async () => {
+  readConfig().then(({ provider }) => selectProvider(provider).abortAuth())
+  writeConfig("provider", null)
+})
+
+on("logout", async (_, provider: CloudProviderString) => selectProvider(provider).logout())
 
 async function registerProvider(webContents: WebContents, provider: CloudProviderString) {
   return selectProvider(provider)?.init().then(FS => {

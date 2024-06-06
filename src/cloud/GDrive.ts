@@ -11,9 +11,11 @@ const TOKEN_PATH = `${TOKEN_FOLDER}/${drives["googleDrive"].tokenFile}`
 
 export class GDrive extends CloudProvider {
     private static gDrive: drive_v3.Drive
+    private static authClient: OAuth2Client
 
     static override async init() {
-        GDrive.gDrive = drive({ version: 'v3', auth: await authorize()})
+        GDrive.authClient = await authorize()
+        GDrive.gDrive = drive({ version: 'v3', auth: GDrive.authClient})
         return GDrive
     }
 
@@ -41,6 +43,11 @@ export class GDrive extends CloudProvider {
 
     static override async abortAuth() {
         fetch("http://localhost:3000").then(data => data.text()).then(() => console.warn("Aborted"))
+    }
+
+    static override async logout() {
+        GDrive.authClient.revokeCredentials()
+        fs.rm(TOKEN_PATH)
     }
 }
 

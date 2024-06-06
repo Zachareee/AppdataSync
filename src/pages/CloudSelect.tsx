@@ -1,7 +1,7 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
-import { abortAuthentication, requestProvider, runOnProviderReply } from "../utils/windowutils";
+import { abortAuthentication, accountsAuthed, requestProvider, runOnProviderReply } from "../utils/windowutils";
 import { CloudProviderString, drives } from "../common";
 import { homePath } from "./Home";
 import CloudEntry from "../components/CloudEntry";
@@ -9,8 +9,12 @@ import CloudEntry from "../components/CloudEntry";
 export default function CloudSelect() {
     const navigate = useNavigate()
     const [loading, setLoading] = useState(false)
+    const [authed, setAuthed] = useState<CloudProviderString[]>([])
 
     runOnProviderReply((provider: CloudProviderString) => gotoHome(provider))
+    useEffect(() => {
+        accountsAuthed().then(setAuthed)
+    }, [])
 
     function gotoHome(provider: CloudProviderString) {
         navigate(homePath, { replace: true, state: { provider } })
@@ -38,7 +42,7 @@ export default function CloudSelect() {
                 {
                     Object.entries(drives).map(([provider, props], key) =>
                         <div className="flex justify-center items-center border-2 border-black rounded-xl cursor-pointer w-max justify-between" onClick={() => choose(provider as CloudProviderString)} key={key}>
-                            {CloudEntry(props)}
+                            {CloudEntry(props, authed.includes(provider as CloudProviderString))}
                         </div>
                     )
                 }
