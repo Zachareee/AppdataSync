@@ -4,10 +4,10 @@ import { authenticate } from "@google-cloud/local-auth";
 import { OAuth2Client, auth } from "google-auth-library"
 import path from "path"
 
-import { CloudProvider } from "../common";
+import { CloudProvider, drives } from "../common";
 import { TOKEN_FOLDER } from "../utils/mainutils";
 
-const TOKEN_PATH = `${TOKEN_FOLDER}/googleDriveAuth.json`
+const TOKEN_PATH = `${TOKEN_FOLDER}/${drives["googleDrive"].tokenFile}`
 
 export class GDrive extends CloudProvider {
     private static gDrive: drive_v3.Drive
@@ -79,7 +79,6 @@ async function saveCredentials(client: OAuth2Client) {
         client_secret,
         refresh_token: client.credentials.refresh_token,
     });
-    await fs.mkdir(TOKEN_FOLDER, { recursive: true })
     await fs.writeFile(TOKEN_PATH, payload)
     return client
 }

@@ -35,14 +35,13 @@ const createWindow = () => {
   }
 
   mainWindow.webContents.addListener("did-finish-load", () => {
-
     fs.readFile(PROVIDER_SETTING, "ascii")
       .then((provider: CloudProviderString) => registerProvider(mainWindow.webContents, provider)
       ).catch(() => { console.warn("No provider file") })
   })
 
   // Open the DevTools.
-  // mainWindow.webContents.openDevTools();
+  mainWindow.webContents.openDevTools();
 };
 
 // This method will be called when Electron has finished

@@ -1,3 +1,5 @@
+import GoogleDrive from "./img/GoogleDriveIcon.svg"
+
 export interface APIFunctions {
     listAppdataFolders(): Promise<string[]>,
     showCloudFiles(): Promise<any>,
@@ -19,6 +21,20 @@ export const RegisterCloudMethods: {
     [signal in IPCSignals]?: (provider: typeof CloudProvider) => (...args: any) => Promise<any>
 } = {
     showCloudFiles: (provider) => provider.listFiles,
+}
+
+export type ProviderContents = {
+    driveName: string
+    icon: string
+    tokenFile: string
+}
+
+export const drives: { [drive in CloudProviderString]?: ProviderContents } = {
+    "googleDrive": {
+        driveName: "Google Drive",
+        icon: GoogleDrive,
+        tokenFile: "googleDriveAuth.json"
+    }
 }
 
 async function notImplemented(): Promise<any> {

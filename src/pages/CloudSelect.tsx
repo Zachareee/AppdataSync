@@ -1,10 +1,10 @@
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 
 import { abortAuthentication, requestProvider, runOnProviderReply } from "../utils/windowutils";
-import GDriveLogin from "../cloud/GDriveLogin";
-import { CloudProviderString } from "../common";
+import { CloudProviderString, drives } from "../common";
 import { homePath } from "./Home";
-import { useState } from "react";
+import CloudEntry from "../components/CloudEntry";
 
 export default function CloudSelect() {
     const navigate = useNavigate()
@@ -21,27 +21,28 @@ export default function CloudSelect() {
         requestProvider(provider)
     }
 
+    function abort() {
+        setLoading(false)
+        abortAuthentication()
+    }
+
     return loading ? (
-        <div>
+        <div className="select-none">
             <h1>Waiting to authenticate</h1>
-            <button onClick={abortAuthentication}>Go back to selection page</button>
+            <button onClick={abort} className="no-drag">Go back to selection page</button>
         </div>
     ) : (
-        <div className="flex flex-col items-center">
+        <div className="flex flex-col items-center select-none">
             <h1>Choose your cloud provider</h1>
-            <div className="flex justify-center min-w-[50%]">
+            <div className="flex justify-center min-w-[50%] no-drag">
                 {
-                    Object.entries(providers).map(([provider, elem], key) =>
+                    Object.entries(drives).map(([provider, props], key) =>
                         <div className="flex justify-center items-center border-2 border-black rounded-xl cursor-pointer w-max justify-between" onClick={() => choose(provider as CloudProviderString)} key={key}>
-                            {elem()}
+                            {CloudEntry(props)}
                         </div>
                     )
                 }
             </div>
         </div >
     )
-}
-
-const providers: { [provider in CloudProviderString]?: () => JSX.Element } = {
-    "googleDrive": GDriveLogin,
 }

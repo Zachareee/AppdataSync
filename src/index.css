@@ -6,6 +6,11 @@ body {
   -webkit-app-region: drag;
 }
 
+#root {
+  width: 100dvw;
+  height: 100dvh;
+}
+
 .no-drag {
   -webkit-app-region: no-drag;
 }
