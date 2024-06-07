@@ -13,7 +13,7 @@ export default function CloudSelect() {
 
     runOnProviderReply((provider: CloudProviderString) => gotoHome(provider))
     useEffect(() => {
-        accountsAuthed().then(auth => {console.log(auth); setAuthed(auth)})
+        accountsAuthed().then(setAuthed)
     }, [])
 
     function gotoHome(provider: CloudProviderString) {
