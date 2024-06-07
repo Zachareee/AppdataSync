@@ -5,7 +5,7 @@ import { OAuth2Client, auth } from "google-auth-library"
 import path from "path"
 
 import { CloudProvider, drives } from "../common";
-import { TOKEN_FOLDER } from "../utils/mainutils";
+import { TOKEN_FOLDER } from "../utils/paths";
 
 const TOKEN_PATH = `${TOKEN_FOLDER}/${drives["googleDrive"].tokenFile}`
 

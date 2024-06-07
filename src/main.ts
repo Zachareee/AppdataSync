@@ -1,9 +1,9 @@
 import { app, BrowserWindow, ipcMain, IpcMainEvent, WebContents } from 'electron';
 import path from 'path';
 import { promises as fs } from "fs"
-import { GDrive } from './cloud/GDrive';
-import { CloudProvider, CloudProviderString, drives, IPCSignals, RegisterCloudMethods } from './common';
-import { readConfig, TOKEN_FOLDER, writeConfig } from './utils/mainutils';
+import { CloudProviderString, drives, IPCSignals, RegisterCloudMethods } from './common';
+import { providerStringPairing, readConfig, writeConfig } from './utils/mainutils';
+import { TOKEN_FOLDER } from './utils/paths';
 
 // Handle creating/removing shortcuts on Windows when installing/uninstalling.
 if (require('electron-squirrel-startup')) {
@@ -94,14 +94,14 @@ handle("accountsAuthed", async () => {
 })
 
 on("abortAuthentication", async () => {
-  readConfig().then(({ provider }) => selectProvider(provider).abortAuth())
+  readConfig().then(({ provider }) => providerStringPairing[provider].abortAuth())
   writeConfig("provider", null)
 })
 
-on("logout", async (_, provider: CloudProviderString) => selectProvider(provider).logout())
+on("logout", async (_, provider: CloudProviderString) => providerStringPairing[provider].logout())
 
 async function registerProvider(webContents: WebContents, provider: CloudProviderString) {
-  return selectProvider(provider)?.init().then(FS => {
+  return providerStringPairing[provider]?.init().then(FS => {
     for (const signal in RegisterCloudMethods) {
       ipcMain.removeHandler(signal)
       ipcMain.handle(signal, RegisterCloudMethods[<IPCSignals>signal](FS))
@@ -115,13 +115,4 @@ function handle(signal: IPCSignals, func: (event: IpcMainEvent, ...args: any[]) 
 
 function on(signal: IPCSignals, func: (event: IpcMainEvent, ...args: any[]) => any) {
   return ipcMain.on(signal, func)
-}
-
-function selectProvider(provider: CloudProviderString): typeof CloudProvider {
-  switch (provider) {
-    case "googleDrive":
-      return GDrive
-  }
-
-  return null
 }
