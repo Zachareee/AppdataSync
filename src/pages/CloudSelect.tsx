@@ -13,7 +13,7 @@ export default function CloudSelect() {
 
     runOnProviderReply((provider: CloudProviderString) => gotoHome(provider))
     useEffect(() => {
-        accountsAuthed().then(setAuthed)
+        accountsAuthed().then(auth => {console.log(auth); setAuthed(auth)})
     }, [])
 
     function gotoHome(provider: CloudProviderString) {
@@ -38,10 +38,10 @@ export default function CloudSelect() {
     ) : (
         <div className="flex flex-col items-center select-none">
             <h1>Choose your cloud provider</h1>
-            <div className="flex justify-center min-w-[50%] no-drag">
+            <div className="flex flex-col items-center justify-center min-w-[50%] no-drag">
                 {
                     Object.entries(drives).map(([provider, props], key) =>
-                        <div className="flex justify-center items-center border-2 border-black rounded-xl cursor-pointer w-max justify-between" onClick={() => choose(provider as CloudProviderString)} key={key}>
+                        <div className="w-full" onClick={() => choose(provider as CloudProviderString)} key={key}>
                             {CloudEntry(props, authed.includes(provider as CloudProviderString))}
                         </div>
                     )
