@@ -1,7 +1,7 @@
 import { app, BrowserWindow, ipcMain, IpcMainEvent, WebContents } from 'electron';
 import path from 'path';
 import { promises as fs } from "fs"
-import { CloudProviderString, drives, IPCSignals, RegisterCloudMethods } from './common';
+import { CloudProviderString, drives, RtMSignals, RegisterCloudMethods, MtRSignals } from './common';
 import { providerStringPairing, readConfig, writeConfig } from './utils/mainutils';
 import { TOKEN_FOLDER } from './utils/paths';
 
@@ -82,13 +82,14 @@ on("requestProvider", async (event, provider: CloudProviderString) => {
 
 handle("accountsAuthed", async () => {
   const providers: CloudProviderString[] = []
-  Object.entries(drives).forEach(
+  await Promise.all(Object.entries(drives).map(
     async ([provider, { tokenFile }]) => {
       try {
         await fs.access(`${TOKEN_FOLDER}/${tokenFile}`)
         providers.push(<CloudProviderString>provider)
       } catch { return }
-    })
+    }
+  ))
 
   return providers
 })
@@ -104,15 +105,19 @@ async function registerProvider(webContents: WebContents, provider: CloudProvide
   return providerStringPairing[provider]?.init().then(FS => {
     for (const signal in RegisterCloudMethods) {
       ipcMain.removeHandler(signal)
-      ipcMain.handle(signal, RegisterCloudMethods[<IPCSignals>signal](FS))
+      ipcMain.handle(signal, RegisterCloudMethods[<RtMSignals>signal](FS))
     }
-  }).then(() => webContents.send("replyProvider", provider)).catch(console.warn)
+  }).then(() => send(webContents, "runOnProviderReply", provider)).catch(console.warn)
 }
 
-function handle(signal: IPCSignals, func: (event: IpcMainEvent, ...args: any[]) => any) {
+function send(webContents: WebContents, signal: MtRSignals, ...args: unknown[]) {
+  return webContents.send(signal, args)
+}
+
+function handle(signal: RtMSignals, func: (event: IpcMainEvent, ...args: unknown[]) => unknown) {
   return ipcMain.handle(signal, func)
 }
 
-function on(signal: IPCSignals, func: (event: IpcMainEvent, ...args: any[]) => any) {
+function on(signal: RtMSignals, func: (event: IpcMainEvent, ...args: unknown[]) => unknown) {
   return ipcMain.on(signal, func)
 }

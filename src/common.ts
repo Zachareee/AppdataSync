@@ -1,6 +1,6 @@
 import GoogleDrive from "./img/GoogleDriveIcon.svg"
 
-export interface APIFunctions {
+export interface RendToMainCalls {
     listAppdataFolders(): Promise<string[]>
     showCloudFiles(): Promise<any>
     requestProvider(provider: CloudProviderString): void
@@ -9,19 +9,22 @@ export interface APIFunctions {
     accountsAuthed(): Promise<CloudProviderString[]>
 }
 
-export type IPCSignals = keyof APIFunctions
+export interface MainToRendCalls {
+    runOnProviderReply(callback: (provider: string) => void): void
+}
 
-export type CloudProviderString = "googleDrive" | "dropbox"
+export type RtMSignals = keyof RendToMainCalls
+export type MtRSignals = keyof MainToRendCalls
 
 export class CloudProvider {
     static async init(): Promise<typeof CloudProvider> { return notImplemented() }
-    static async listFiles() { return notImplemented() }
-    static async abortAuth() { return notImplemented() }
-    static async logout() { return notImplemented() }
+    static async listFiles(): Promise<string> { return notImplemented() }
+    static async abortAuth(): Promise<void> { return notImplemented() }
+    static async logout(): Promise<void> { return notImplemented() }
 }
 
 export const RegisterCloudMethods: {
-    [signal in IPCSignals]?: (provider: typeof CloudProvider) => (...args: any) => Promise<any>
+    [signal in RtMSignals]?: (provider: typeof CloudProvider) => (...args: unknown[]) => Promise<unknown>
 } = {
     showCloudFiles: (provider) => provider.listFiles,
     logout: (provider) => provider.logout
@@ -33,14 +36,16 @@ export type ProviderContents = {
     tokenFile: string
 }
 
+export type CloudProviderString = "googleDrive" | "dropbox"
+
 export const drives: { [drive in CloudProviderString]?: ProviderContents } = {
-    "googleDrive": {
+    googleDrive: {
         driveName: "Google Drive",
         icon: GoogleDrive,
         tokenFile: "googleDriveAuth.json"
-    }
+    },
 }
 
-async function notImplemented(): Promise<any> {
+async function notImplemented(): Promise<never> {
     throw new Error("Not implemented")
 }
