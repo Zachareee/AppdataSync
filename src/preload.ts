@@ -10,7 +10,8 @@ const rtm: RendToMainCalls = {
     abortAuthentication: () => send("abortAuthentication"),
     logout: provider => send("logout", provider),
     accountsAuthed: () => invoke("accountsAuthed"),
-    syncFolder: (folderName, upload) => send("syncFolder", folderName, upload)
+    syncFolder: (folderName, upload) => send("syncFolder", folderName, upload),
+    getSyncedFolders: () => invoke("getSyncedFolders")
 }
 
 const mtr: MainToRendCalls = {

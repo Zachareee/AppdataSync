@@ -1,4 +1,4 @@
-import { promises as fs } from "fs"
+import { promises as fs, createWriteStream } from "fs"
 import { drive, drive_v3 } from "@googleapis/drive";
 import { authenticate } from "@google-cloud/local-auth";
 import { OAuth2Client, auth } from "google-auth-library"
@@ -61,7 +61,7 @@ export class GDrive extends CloudProvider {
 
     // Tests if folder exists, update if it does
     // create if it doesn't
-    static override async syncFolder(name: string, upload: boolean) {
+    static override async uploadFolder(name: string, upload: boolean) {
         GDrive.gDrive.files.list({
             q: `name = '${name}.gzip' and '${GDrive.homeFolder}' in parents and trashed = false`,
             pageSize: 1,
@@ -72,6 +72,38 @@ export class GDrive extends CloudProvider {
                 else GDrive.createFile(name)
             else GDrive.deleteFile(arr[0].id)
         })
+    }
+
+    static async downloadFolders(): Promise<string[]> {
+        const folders = await GDrive.getFolders()
+        console.log(folders)
+        folders.forEach(({ name, id }) => GDrive.downloadFolder(name, id))
+        return folders.map(({ name }) => name)
+    }
+
+    private static async downloadFolder(filename: string, fileId: string) {
+        const stream = createWriteStream(path.join(APPDATA_PATH, filename))
+        GDrive.gDrive.files.get({ fileId, alt: "media" }, { responseType: "stream" }, (_, { data }) => {
+            data.pipe(stream)
+        })
+    }
+
+    private static async getFolders() {
+        const folders = <drive_v3.Schema$File[]>[]
+        let { files, nextPageToken } = await GDrive.gDrive.files.list({
+            q: `'${GDrive.homeFolder}' in parents and trashed = false`,
+            fields: "nextPageToken, files(id, name)"
+        }).then(res => res.data)
+        folders.push(...files)
+        while (nextPageToken) {
+            ({ files, nextPageToken } = await GDrive.gDrive.files.list({
+                q: `${GDrive.homeFolder} in parents and trashed = false`,
+                fields: "nextPageToken, files(id, name)",
+                pageToken: nextPageToken
+            }).then(res => res.data))
+            folders.push(...files)
+        }
+        return folders
     }
 
     private static async checkHomeFolder() {
