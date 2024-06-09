@@ -18,18 +18,10 @@ export class GDrive extends CloudProvider {
     static override async init() {
         GDrive.authClient = await authorize()
         GDrive.gDrive = drive({ version: 'v3', auth: GDrive.authClient })
-        const fileArr = await this.getFolder({
-            name: { query: APP_NAME, operator: "=" },
-            mimeType: { query: FILETYPE.FOLDER, operator: "=" },
-            trashed: { query: false, operator: "=" }
-        })
+        const fileArr = await this.checkHomeFolder()
         GDrive.homeFolder = (fileArr.length
             ? fileArr[0]
-            : await this.createHomeFolder({
-                name: APP_NAME,
-                description: "Your synced appdata is stored here! Source: AppdataSync https://github.com/Zachareee/AppdataSync",
-                mimeType: FILETYPE.FOLDER
-            })
+            : await this.createHomeFolder()
         ).id
 
         return GDrive
@@ -66,53 +58,60 @@ export class GDrive extends CloudProvider {
         fs.rm(TOKEN_PATH)
     }
 
+    // Tests if folder exists, update if it does
+    // create if it doesn't
     static override async syncFolder(name: string) {
-        GDrive.createFile(name)
-        return
+        GDrive.gDrive.files.list({
+            q: `name = '${name}.gzip' and '${GDrive.homeFolder}' in parents and trashed = false`,
+            pageSize: 1,
+            fields: "files(id)"
+        }).then(res => res.data.files).then(arr => {
+            if (arr.length) GDrive.updateFile(name, arr[0].id)
+            else GDrive.createFile(name)
+        })
     }
 
-    private static async getFolder(searchParams: SearchParams, pageSize = 1) {
-        const q = stringifyQuery(searchParams)
-        return GDrive.gDrive.files.list({ q, pageSize, fields: "files(id, name)" }).then(res => res.data.files)
+    private static async checkHomeFolder() {
+        return GDrive.gDrive.files.list({
+            q: `name = '${APP_NAME}' and mimeType = '${FILETYPE.FOLDER}' and trashed = false`,
+            pageSize: 1,
+            fields: "files(id, name)"
+        }).then(res => res.data.files)
     }
 
-    private static async createHomeFolder({ name, description, mimeType }: { name: string, description?: string, mimeType?: FILETYPE }) {
+    private static async createHomeFolder() {
         return GDrive.gDrive.files.create({
             requestBody: {
-                name,
-                description,
-                mimeType
-            }, uploadType: "multipart", fields: "id, name"
+                name: APP_NAME,
+                description: "Your synced appdata is stored here! Source: AppdataSync https://github.com/Zachareee/AppdataSync",
+                mimeType: FILETYPE.FOLDER
+            }, fields: "id, name"
         }).then(file => file.data)
     }
 
+    private static async updateFile(pathName: string, id: string) {
+        return GDrive.gDrive.files.update(this.createUploadBody(pathName, id))
+    }
+
     private static createFile(pathName: string) {
-        return GDrive.gDrive.files.create({
+        return GDrive.gDrive.files.create(this.createUploadBody(pathName))
+    }
+
+    private static createUploadBody(pathName: string, fileId?: string) {
+        return {
             requestBody: {
                 name: `${pathName}.gzip`,
-                parents: [GDrive.homeFolder]
+                parents: fileId ? undefined : [GDrive.homeFolder]
             },
             media: {
                 body: c({
                     gzip: true
                 }, [path.join(APPDATA_PATH, pathName)])
-            }
-        })
+            },
+            uploadType: "multipart",
+            fileId
+        }
     }
-}
-
-function stringifyQuery(params: SearchParams) {
-    return Object.entries(params).map(([key, { query, operator, negate }]) => `${negate ? "not " : ""}${key} ${operator} ${typeof query === "string" ? `'${query}'` : query}`).join(" and ")
-}
-
-type SearchParams = Partial<Record<Props, Options>>
-
-type Props = "name" | "mimeType" | "trashed" | "fullText" | "modifiedTime" | "starred"
-
-interface Options {
-    query: string | boolean
-    operator: "=" | "!=" | "<" | ">" | "contains"
-    negate?: boolean
 }
 
 enum FILETYPE {
