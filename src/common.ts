@@ -7,7 +7,7 @@ export interface RendToMainCalls {
     abortAuthentication(): void
     logout(provider: CloudProviderString): void
     accountsAuthed(): Promise<CloudProviderString[]>
-    syncFolder(folderName: string): void
+    syncFolder(folderName: string, upload: boolean): void
 }
 
 export class CloudProvider {
@@ -15,7 +15,7 @@ export class CloudProvider {
     static async listFiles(): Promise<string> { return notImplemented() }
     static async abortAuth(): Promise<void> { return notImplemented() }
     static async logout(): Promise<void> { return notImplemented() }
-    static async syncFolder(folderName: string): Promise<void> { return notImplemented(folderName) }
+    static async syncFolder(folderName: string, upload: boolean): Promise<void> { return notImplemented(folderName, upload) }
 }
 
 export interface MainToRendCalls {

@@ -4,6 +4,7 @@ import { authenticate } from "@google-cloud/local-auth";
 import { OAuth2Client, auth } from "google-auth-library"
 import path from "path"
 import { c } from "tar"
+import { Readable } from "stream"
 
 import { CloudProvider, drives } from "../common";
 import { APPDATA_PATH, APP_NAME, TOKEN_FOLDER } from "../utils/paths";
@@ -60,14 +61,16 @@ export class GDrive extends CloudProvider {
 
     // Tests if folder exists, update if it does
     // create if it doesn't
-    static override async syncFolder(name: string) {
+    static override async syncFolder(name: string, upload: boolean) {
         GDrive.gDrive.files.list({
             q: `name = '${name}.gzip' and '${GDrive.homeFolder}' in parents and trashed = false`,
             pageSize: 1,
             fields: "files(id)"
         }).then(res => res.data.files).then(arr => {
-            if (arr.length) GDrive.updateFile(name, arr[0].id)
-            else GDrive.createFile(name)
+            if (upload)
+                if (arr.length) GDrive.updateFile(name, arr[0].id)
+                else GDrive.createFile(name)
+            else GDrive.deleteFile(arr[0].id)
         })
     }
 
@@ -93,7 +96,11 @@ export class GDrive extends CloudProvider {
         return GDrive.gDrive.files.update(this.createUploadBody(pathName, id))
     }
 
-    private static createFile(pathName: string) {
+    private static async deleteFile(fileId: string) {
+        return GDrive.gDrive.files.delete({ fileId })
+    }
+
+    private static async createFile(pathName: string) {
         return GDrive.gDrive.files.create(this.createUploadBody(pathName))
     }
 
@@ -101,12 +108,13 @@ export class GDrive extends CloudProvider {
         return {
             requestBody: {
                 name: `${pathName}.gzip`,
-                parents: fileId ? undefined : [GDrive.homeFolder]
+                parents: fileId ? undefined : [GDrive.homeFolder],
             },
             media: {
-                body: c({
-                    gzip: true
-                }, [path.join(APPDATA_PATH, pathName)])
+                body: Readable.from(<Buffer>c({
+                    gzip: true,
+                    sync: true
+                }, [path.join(APPDATA_PATH, pathName)]).read()),
             },
             uploadType: "multipart",
             fileId
