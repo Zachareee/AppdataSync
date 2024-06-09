@@ -1,6 +1,6 @@
 // See the Electron documentation for details on how to use preload scripts:
 // https://www.electronjs.org/docs/latest/tutorial/process-model#preload-scripts
-import { IpcRendererEvent, contextBridge, ipcRenderer } from "electron"
+import { contextBridge, ipcRenderer, IpcRenderer } from "electron"
 import { RendToMainCalls, CloudProviderString, RtMSignals, MainToRendCalls, MtRSignals } from "./common"
 
 const rtm: RendToMainCalls = {
@@ -8,13 +8,14 @@ const rtm: RendToMainCalls = {
     showCloudFiles: () => invoke("showCloudFiles"),
     requestProvider: provider => send("requestProvider", provider),
     abortAuthentication: () => send("abortAuthentication"),
-    logout: (provider) => send("logout", provider),
-    accountsAuthed: () => invoke("accountsAuthed")
+    logout: provider => send("logout", provider),
+    accountsAuthed: () => invoke("accountsAuthed"),
+    syncFolder: folderName => send("syncFolder", folderName)
 }
 
 const mtr: MainToRendCalls = {
     runOnProviderReply(callback) {
-        on("runOnProviderReply", (_, provider: CloudProviderString) => 
+        on("runOnProviderReply", (_, provider: CloudProviderString) =>
             callback(provider)
         )
     },
@@ -23,7 +24,7 @@ const mtr: MainToRendCalls = {
 contextBridge.exposeInMainWorld("RTM", rtm)
 contextBridge.exposeInMainWorld("MTR", mtr)
 
-function on(signal: MtRSignals, callback: (event: IpcRendererEvent, ...args: unknown[]) => unknown) {
+function on(signal: MtRSignals, callback: Parameters<IpcRenderer["on"]>[1]) {
     return ipcRenderer.on(signal, callback)
 }
 

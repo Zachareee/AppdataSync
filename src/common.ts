@@ -1,4 +1,4 @@
-import GoogleDrive from "./img/GoogleDriveIcon.svg"
+import GoogleDriveIcon from "./img/GoogleDriveIcon.svg"
 
 export interface RendToMainCalls {
     listAppdataFolders(): Promise<string[]>
@@ -7,6 +7,7 @@ export interface RendToMainCalls {
     abortAuthentication(): void
     logout(provider: CloudProviderString): void
     accountsAuthed(): Promise<CloudProviderString[]>
+    syncFolder(folderName: string): void
 }
 
 export interface MainToRendCalls {
@@ -16,36 +17,18 @@ export interface MainToRendCalls {
 export type RtMSignals = keyof RendToMainCalls
 export type MtRSignals = keyof MainToRendCalls
 
-export class CloudProvider {
-    static async init(): Promise<typeof CloudProvider> { return notImplemented() }
-    static async listFiles(): Promise<string> { return notImplemented() }
-    static async abortAuth(): Promise<void> { return notImplemented() }
-    static async logout(): Promise<void> { return notImplemented() }
-}
-
-export const RegisterCloudMethods: {
-    [signal in RtMSignals]?: (provider: typeof CloudProvider) => (...args: unknown[]) => Promise<unknown>
-} = {
-    showCloudFiles: (provider) => provider.listFiles,
-    logout: (provider) => provider.logout
-}
-
 export type ProviderContents = {
     driveName: string
     icon: string
     tokenFile: string
 }
 
-export type CloudProviderString = "googleDrive" | "dropbox"
+export type CloudProviderString = keyof typeof drives
 
-export const drives: { [drive in CloudProviderString]?: ProviderContents } = {
+export const drives: { [drive in | "googleDrive"]: ProviderContents } = {
     googleDrive: {
         driveName: "Google Drive",
-        icon: GoogleDrive,
+        icon: GoogleDriveIcon,
         tokenFile: "googleDriveAuth.json"
-    },
-}
-
-async function notImplemented(): Promise<never> {
-    throw new Error("Not implemented")
+    }
 }

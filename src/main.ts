@@ -1,8 +1,8 @@
-import { app, BrowserWindow, ipcMain, IpcMainEvent, WebContents } from 'electron';
+import { app, BrowserWindow, IpcMain, ipcMain, WebContents } from 'electron';
 import path from 'path';
 import { promises as fs } from "fs"
-import { CloudProviderString, drives, RtMSignals, RegisterCloudMethods, MtRSignals } from './common';
-import { providerStringPairing, readConfig, writeConfig } from './utils/mainutils';
+import { CloudProviderString, drives, RtMSignals, MtRSignals } from './common';
+import { providerStringPairing, readConfig, RegisterCloudMethods, writeConfig } from './utils/mainutils';
 import { TOKEN_FOLDER } from './utils/paths';
 
 // Handle creating/removing shortcuts on Windows when installing/uninstalling.
@@ -103,9 +103,13 @@ on("logout", async (_, provider: CloudProviderString) => providerStringPairing[p
 
 async function registerProvider(webContents: WebContents, provider: CloudProviderString) {
   return providerStringPairing[provider]?.init().then(FS => {
-    for (const signal in RegisterCloudMethods) {
+    for (const sig in RegisterCloudMethods) {
+      const signal = <RtMSignals>sig
       ipcMain.removeHandler(signal)
-      ipcMain.handle(signal, RegisterCloudMethods[<RtMSignals>signal](FS))
+
+      const callback = RegisterCloudMethods[signal]
+      if (callback.reply) cloudHandle(signal, FS[callback.reply])
+      else cloudOn(signal, FS[callback.noReply])
     }
   }).then(() => send(webContents, "runOnProviderReply", provider)).catch(console.warn)
 }
@@ -114,10 +118,22 @@ function send(webContents: WebContents, signal: MtRSignals, ...args: unknown[]) 
   return webContents.send(signal, args)
 }
 
-function handle(signal: RtMSignals, func: (event: IpcMainEvent, ...args: unknown[]) => unknown) {
+function cloudHandle(signal: RtMSignals, func: CPFunction) {
+  return ipcMain.handle(signal, (_, ...args) => func(...args))
+}
+
+function cloudOn(signal: RtMSignals, func: CPFunction) {
+  return ipcMain.on(signal, (_, ...args) => func(...args))
+}
+
+function handle(signal: RtMSignals, func: Parameters<IpcMain["on"]>[1]) {
   return ipcMain.handle(signal, func)
 }
 
-function on(signal: RtMSignals, func: (event: IpcMainEvent, ...args: unknown[]) => unknown) {
+function on(signal: RtMSignals, func: Parameters<IpcMain["on"]>[1]) {
   return ipcMain.on(signal, func)
 }
+
+// this type doesn't work for some reason and I'm really annoyed :/
+// type CPFunction = typeof CloudProvider[CloudProviderMethods]
+type CPFunction = (...args: unknown[]) => unknown
