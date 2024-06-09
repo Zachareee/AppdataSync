@@ -113,8 +113,9 @@ export class GDrive extends CloudProvider {
             media: {
                 body: Readable.from(<Buffer>c({
                     gzip: true,
-                    sync: true
-                }, [path.join(APPDATA_PATH, pathName)]).read()),
+                    sync: true,
+                    cwd: APPDATA_PATH
+                }, [pathName]).read()),
             },
             uploadType: "multipart",
             fileId
