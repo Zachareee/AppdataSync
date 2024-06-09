@@ -1,5 +1,5 @@
 import { useState } from "react"
-import { listAppdataFolders } from "../utils/windowutils"
+import { listAppdataFolders, syncFolder } from "../utils/windowutils"
 
 export default function Folders() {
     const [folders, setFolders] = useState<Folder[]>([])
@@ -7,6 +7,7 @@ export default function Folders() {
     if (!folders.length) listAppdataFolders().then(folders => setFolders(folders.map(name => ({ name, checked: false } as Folder))))
 
     function click(idx: number) {
+        syncFolder(folders[idx].name)
         setFolders(folders => {
             folders[idx].checked = !folders[idx].checked
             return [...folders]

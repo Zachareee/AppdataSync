@@ -3,9 +3,10 @@ import { drive, drive_v3 } from "@googleapis/drive";
 import { authenticate } from "@google-cloud/local-auth";
 import { OAuth2Client, auth } from "google-auth-library"
 import path from "path"
+import { c } from "tar"
 
 import { CloudProvider, drives } from "../common";
-import { APP_NAME, TOKEN_FOLDER } from "../utils/paths";
+import { APPDATA_PATH, APP_NAME, TOKEN_FOLDER } from "../utils/paths";
 
 const TOKEN_PATH = `${TOKEN_FOLDER}/${drives["googleDrive"].tokenFile}`
 
@@ -24,7 +25,7 @@ export class GDrive extends CloudProvider {
         })
         GDrive.homeFolder = (fileArr.length
             ? fileArr[0]
-            : await this.createFolder({
+            : await this.createHomeFolder({
                 name: APP_NAME,
                 description: "Your synced appdata is stored here! Source: AppdataSync https://github.com/Zachareee/AppdataSync",
                 mimeType: FILETYPE.FOLDER
@@ -66,7 +67,7 @@ export class GDrive extends CloudProvider {
     }
 
     static override async syncFolder(name: string) {
-        this.createFolder({ name }, GDrive.homeFolder)
+        GDrive.createFile(name)
         return
     }
 
@@ -75,16 +76,28 @@ export class GDrive extends CloudProvider {
         return GDrive.gDrive.files.list({ q, pageSize, fields: "files(id, name)" }).then(res => res.data.files)
     }
 
-    private static async createFolder({ name, description, mimeType }: { name: string, description?: string, mimeType?: FILETYPE }, homeFolder?: string) {
+    private static async createHomeFolder({ name, description, mimeType }: { name: string, description?: string, mimeType?: FILETYPE }) {
         return GDrive.gDrive.files.create({
             requestBody: {
                 name,
                 description,
-                mimeType,
-                parents: homeFolder ? [homeFolder] : []
+                mimeType
             }, uploadType: "multipart", fields: "id, name"
         }).then(file => file.data)
+    }
 
+    private static createFile(pathName: string) {
+        return GDrive.gDrive.files.create({
+            requestBody: {
+                name: `${pathName}.gzip`,
+                parents: [GDrive.homeFolder]
+            },
+            media: {
+                body: c({
+                    gzip: true
+                }, [path.join(APPDATA_PATH, pathName)])
+            }
+        })
     }
 }
 
