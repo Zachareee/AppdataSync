@@ -5,17 +5,32 @@ import { OAuth2Client, auth } from "google-auth-library"
 import path from "path"
 
 import { CloudProvider, drives } from "../common";
-import { TOKEN_FOLDER } from "../utils/paths";
+import { APP_NAME, TOKEN_FOLDER } from "../utils/paths";
 
 const TOKEN_PATH = `${TOKEN_FOLDER}/${drives["googleDrive"].tokenFile}`
 
 export class GDrive extends CloudProvider {
     private static gDrive: drive_v3.Drive
     private static authClient: OAuth2Client
+    private static homeFolder: string
 
     static override async init() {
         GDrive.authClient = await authorize()
-        GDrive.gDrive = drive({ version: 'v3', auth: GDrive.authClient})
+        GDrive.gDrive = drive({ version: 'v3', auth: GDrive.authClient })
+        const fileArr = await this.getFolder({
+            name: { query: APP_NAME, operator: "=" },
+            mimeType: { query: FILETYPE.FOLDER, operator: "=" },
+            trashed: { query: false, operator: "=" }
+        })
+        GDrive.homeFolder = (fileArr.length
+            ? fileArr[0]
+            : await this.createFolder({
+                name: APP_NAME,
+                description: "Your synced appdata is stored here! Source: AppdataSync https://github.com/Zachareee/AppdataSync",
+                mimeType: FILETYPE.FOLDER
+            })
+        ).id
+
         return GDrive
     }
 
@@ -49,6 +64,46 @@ export class GDrive extends CloudProvider {
         GDrive.authClient.revokeCredentials()
         fs.rm(TOKEN_PATH)
     }
+
+    static override async syncFolder(name: string) {
+        this.createFolder({ name }, GDrive.homeFolder)
+        return
+    }
+
+    private static async getFolder(searchParams: SearchParams, pageSize = 1) {
+        const q = stringifyQuery(searchParams)
+        return GDrive.gDrive.files.list({ q, pageSize, fields: "files(id, name)" }).then(res => res.data.files)
+    }
+
+    private static async createFolder({ name, description, mimeType }: { name: string, description?: string, mimeType?: FILETYPE }, homeFolder?: string) {
+        return GDrive.gDrive.files.create({
+            requestBody: {
+                name,
+                description,
+                mimeType,
+                parents: homeFolder ? [homeFolder] : []
+            }, uploadType: "multipart", fields: "id, name"
+        }).then(file => file.data)
+
+    }
+}
+
+function stringifyQuery(params: SearchParams) {
+    return Object.entries(params).map(([key, { query, operator, negate }]) => `${negate ? "not " : ""}${key} ${operator} ${typeof query === "string" ? `'${query}'` : query}`).join(" and ")
+}
+
+type SearchParams = Partial<Record<Props, Options>>
+
+type Props = "name" | "mimeType" | "trashed" | "fullText" | "modifiedTime" | "starred"
+
+interface Options {
+    query: string | boolean
+    operator: "=" | "!=" | "<" | ">" | "contains"
+    negate?: boolean
+}
+
+enum FILETYPE {
+    FOLDER = "application/vnd.google-apps.folder"
 }
 
 // If modifying these scopes, delete token.json.
