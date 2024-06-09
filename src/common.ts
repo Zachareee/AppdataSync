@@ -10,6 +10,14 @@ export interface RendToMainCalls {
     syncFolder(folderName: string): void
 }
 
+export class CloudProvider {
+    static async init(): Promise<typeof CloudProvider> { return notImplemented() }
+    static async listFiles(): Promise<string> { return notImplemented() }
+    static async abortAuth(): Promise<void> { return notImplemented() }
+    static async logout(): Promise<void> { return notImplemented() }
+    static async syncFolder(folderName: string): Promise<void> { return notImplemented(folderName) }
+}
+
 export interface MainToRendCalls {
     runOnProviderReply(callback: (provider: string) => void): void
 }
@@ -31,4 +39,9 @@ export const drives: { [drive in | "googleDrive"]: ProviderContents } = {
         icon: GoogleDriveIcon,
         tokenFile: "googleDriveAuth.json"
     }
+}
+
+async function notImplemented(...args: unknown[]): Promise<never> {
+    args
+    throw new Error("Not implemented")
 }
