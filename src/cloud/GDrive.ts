@@ -1,9 +1,9 @@
-import { promises as fs, createWriteStream } from "fs"
+import { promises as fs } from "fs"
 import { drive, drive_v3 } from "@googleapis/drive";
 import { authenticate } from "@google-cloud/local-auth";
 import { OAuth2Client, auth } from "google-auth-library"
 import path from "path"
-import { c } from "tar"
+import { c, x } from "tar"
 import { Readable } from "stream"
 
 import { CloudProvider, drives } from "../common";
@@ -76,33 +76,27 @@ export class GDrive extends CloudProvider {
 
     static async downloadFolders(): Promise<string[]> {
         const folders = await GDrive.getFolders()
-        console.log(folders)
-        folders.forEach(({ name, id }) => GDrive.downloadFolder(name, id))
+        folders.forEach(({ id }) => GDrive.downloadFolder(id))
         return folders.map(({ name }) => name)
     }
 
-    private static async downloadFolder(filename: string, fileId: string) {
-        const stream = createWriteStream(path.join(APPDATA_PATH, filename))
+    private static async downloadFolder(fileId: string) {
         GDrive.gDrive.files.get({ fileId, alt: "media" }, { responseType: "stream" }, (_, { data }) => {
-            data.pipe(stream)
+            data.pipe(x({ cwd: path.join(APPDATA_PATH, "test") }))
         })
     }
 
     private static async getFolders() {
         const folders = <drive_v3.Schema$File[]>[]
-        let { files, nextPageToken } = await GDrive.gDrive.files.list({
-            q: `'${GDrive.homeFolder}' in parents and trashed = false`,
-            fields: "nextPageToken, files(id, name)"
-        }).then(res => res.data)
-        folders.push(...files)
-        while (nextPageToken) {
+        let files, nextPageToken
+        do {
             ({ files, nextPageToken } = await GDrive.gDrive.files.list({
-                q: `${GDrive.homeFolder} in parents and trashed = false`,
+                q: `'${GDrive.homeFolder}' in parents and trashed = false`,
                 fields: "nextPageToken, files(id, name)",
                 pageToken: nextPageToken
             }).then(res => res.data))
             folders.push(...files)
-        }
+        } while (nextPageToken)
         return folders
     }
 
