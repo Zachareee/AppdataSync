@@ -1,8 +1,9 @@
-import { promises as fs } from "fs"
+import { promises as fs, statSync } from "fs"
 import { drive, drive_v3 } from "@googleapis/drive";
 import { authenticate } from "@google-cloud/local-auth";
 import { OAuth2Client, auth } from "google-auth-library"
 import path from "path"
+import glob from "glob"
 import { c, x } from "tar"
 import { Readable } from "stream"
 
@@ -10,6 +11,7 @@ import { CloudProvider, drives } from "../common";
 import { APPDATA_PATH, APP_NAME, TOKEN_FOLDER } from "../utils/paths";
 
 const TOKEN_PATH = `${TOKEN_FOLDER}/${drives["googleDrive"].tokenFile}`
+const FILE_EXTENSION = /.gzip$/
 
 export class GDrive extends CloudProvider {
     private static gDrive: drive_v3.Drive
@@ -76,11 +78,15 @@ export class GDrive extends CloudProvider {
 
     static async downloadFolders(): Promise<string[]> {
         const folders = await GDrive.getFolders()
-        folders.forEach(({ id }) => GDrive.downloadFolder(id))
+        folders.forEach(file => GDrive.downloadFolder(file))
         return folders.map(({ name }) => name)
     }
 
-    private static async downloadFolder(fileId: string) {
+    private static async downloadFolder({ id: fileId, modifiedTime, name }: drive_v3.Schema$File) {
+        const onlineModTime = new Date(modifiedTime)
+        const offlineModTime = await getLastModDate(path.join(APPDATA_PATH, name.replace(FILE_EXTENSION, "")))
+        console.log(onlineModTime, offlineModTime)
+        if (onlineModTime <= offlineModTime) return
         GDrive.gDrive.files.get({ fileId, alt: "media" }, { responseType: "stream" }, (_, { data }) => {
             data.pipe(x({ cwd: path.join(APPDATA_PATH, "test") }))
         })
@@ -92,7 +98,7 @@ export class GDrive extends CloudProvider {
         do {
             ({ files, nextPageToken } = await GDrive.gDrive.files.list({
                 q: `'${GDrive.homeFolder}' in parents and trashed = false`,
-                fields: "nextPageToken, files(id, name)",
+                fields: "nextPageToken, files(id, name, modifiedTime)",
                 pageToken: nextPageToken
             }).then(res => res.data))
             folders.push(...files)
@@ -147,6 +153,29 @@ export class GDrive extends CloudProvider {
             fileId
         }
     }
+}
+
+// credits to stackoverflow answer
+// https://stackoverflow.com/a/45826189
+async function getLastModDate(absolutePath: string): Promise<Date> {
+    const stat = statSync(absolutePath)
+    if (stat.isFile()) { return Promise.resolve(stat.mtime) }
+    return new Promise((resolve, reject) => {
+        let lastMod = new Date(1970, 0)
+        glob(path.join(absolutePath, '**/*'), (err, files) => {
+            if (err) {
+                return reject(err)
+            }
+
+            files.forEach(file => {
+                const stat = statSync(file)
+                if (stat.isFile() && stat.mtime > lastMod) {
+                    lastMod = stat.mtime
+                }
+            })
+            return resolve(lastMod)
+        })
+    })
 }
 
 enum FILETYPE {
