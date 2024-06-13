@@ -4,8 +4,6 @@ import { CloudProvider, CloudProviderString } from "../common";
 import { CONFIG_PATH } from "./paths";
 import { GDrive } from "../cloud/GDrive";
 
-export type CloudProviderMethods = Exclude<keyof typeof CloudProvider, "prototype">
-
 export const providerStringPairing: { [provider in CloudProviderString]?: typeof CloudProvider } = {
     googleDrive: GDrive
 }

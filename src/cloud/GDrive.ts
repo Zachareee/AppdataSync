@@ -85,7 +85,6 @@ export class GDrive extends CloudProvider {
     private static async downloadFolder({ id: fileId, modifiedTime, name }: drive_v3.Schema$File) {
         const onlineModTime = new Date(modifiedTime)
         const offlineModTime = await getLastModDate(path.join(APPDATA_PATH, name.replace(FILE_EXTENSION, "")))
-        console.log(onlineModTime, offlineModTime)
         if (onlineModTime <= offlineModTime) return
         GDrive.gDrive.files.get({ fileId, alt: "media" }, { responseType: "stream" }, (_, { data }) => {
             data.pipe(x({ cwd: path.join(APPDATA_PATH, "test") }))
@@ -125,7 +124,7 @@ export class GDrive extends CloudProvider {
     }
 
     private static async updateFile(pathName: string, id: string) {
-        return GDrive.gDrive.files.update(this.createUploadBody(pathName, id))
+        return this.createUploadBody(pathName, id).then(body => GDrive.gDrive.files.update(body))
     }
 
     private static async deleteFile(fileId: string) {
@@ -133,25 +132,30 @@ export class GDrive extends CloudProvider {
     }
 
     private static async createFile(pathName: string) {
-        return GDrive.gDrive.files.create(this.createUploadBody(pathName))
+        return this.createUploadBody(pathName).then(body => GDrive.gDrive.files.create(body))
     }
 
-    private static createUploadBody(pathName: string, fileId?: string) {
-        return {
-            requestBody: {
-                name: `${pathName}.gzip`,
-                parents: fileId ? undefined : [GDrive.homeFolder],
-            },
-            media: {
-                body: Readable.from(<Buffer>c({
-                    gzip: true,
-                    sync: true,
-                    cwd: APPDATA_PATH
-                }, [pathName]).read()),
-            },
-            uploadType: "multipart",
-            fileId
-        }
+    private static async createUploadBody(pathName: string, fileId: string): Promise<drive_v3.Params$Resource$Files$Update>
+    private static async createUploadBody(pathName: string, fileId?: string): Promise<drive_v3.Params$Resource$Files$Create>
+    private static async createUploadBody(pathName: string, fileId?: string) {
+        return getLastModDate(path.join(APPDATA_PATH, pathName))
+            .then(date => date.toISOString())
+            .then(modifiedTime => ({
+                requestBody: {
+                    name: `${pathName}.gzip`,
+                    parents: fileId ? undefined : [GDrive.homeFolder],
+                    modifiedTime
+                },
+                media: {
+                    body: Readable.from(<Buffer>c({
+                        gzip: true,
+                        sync: true,
+                        cwd: APPDATA_PATH
+                    }, [pathName]).read()),
+                },
+                uploadType: "multipart",
+                fileId
+            }))
     }
 }
 
