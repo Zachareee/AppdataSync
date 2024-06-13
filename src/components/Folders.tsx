@@ -7,7 +7,7 @@ export default function Folders() {
 
     if (!folders.length) listAppdataFolders()
         .then(folders => getSyncedFolders()
-            .then(results => setFolders(folders.map(name => ({ name, checked: results.includes(name) } as Folder))))
+            .then(results => setFolders(folders.map(name => ({ name, checked: results?.includes(name) ?? false }))))
         )
 
     return <div className="no-drag">

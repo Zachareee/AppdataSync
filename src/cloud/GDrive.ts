@@ -48,9 +48,9 @@ export class GDrive extends CloudProvider {
             fields: "files(id)"
         }).then(res => res.data.files).then(arr => {
             if (upload)
-                if (arr.length) GDrive.updateFile(name, arr[0].id)
-                else GDrive.createFile(name)
-            else GDrive.deleteFile(arr[0].id)
+                if (arr.length) this.updateFile(name, arr[0].id)
+                else this.createFile(name)
+            else this.deleteFile(arr[0].id)
         })
     }
 

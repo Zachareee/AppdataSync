@@ -2,8 +2,8 @@ import { app, BrowserWindow, IpcMain, ipcMain, WebContents } from 'electron';
 import path from 'path';
 import { promises as fs } from "fs"
 import { CloudProviderString, drives, RtMSignals, MtRSignals } from './common';
-import { addFolderToConfig, providerStringPairing, readConfig, removeFolderFromConfig, writeConfig } from './utils/mainutils';
-import { TOKEN_FOLDER } from './utils/paths';
+import { addFolderToConfig, providerStringPairing, readConfig, removeFolderFromConfig, unwatchFolder, watchFolder, writeConfig } from './utils/mainutils';
+import { APPDATA_PATH, TOKEN_FOLDER } from './utils/paths';
 
 // Handle creating/removing shortcuts on Windows when installing/uninstalling.
 if (require('electron-squirrel-startup')) {
@@ -71,7 +71,7 @@ app.on('activate', () => {
 fs.mkdir(TOKEN_FOLDER, { recursive: true })
 
 // Read Appdata folders
-handle("listAppdataFolders", async () => await fs.readdir(app.getPath("appData")))
+handle("listAppdataFolders", async () => await fs.readdir(APPDATA_PATH))
 
 // Registers cloud methods
 on("requestProvider", async (event, provider: CloudProviderString) => {
@@ -102,13 +102,17 @@ on("logout", async (_, provider: CloudProviderString) => providerStringPairing[p
 
 async function registerProvider(webContents: WebContents, provider: CloudProviderString) {
   return providerStringPairing[provider]?.init().then(async FS => {
-    ipcMain.removeAllListeners("syncFolder")
-    ipcMain.removeHandler("getSyncedFolders")
+    ipcMain.removeAllListeners("syncFolder").removeHandler("getSyncedFolders")
 
-    writeConfig("folders", await FS["downloadFolders"]())
-    handle("getSyncedFolders", () => readConfig().then(config => config.folders))
-    on("syncFolder", async (_, folderName, upload) => {
-      (upload ? addFolderToConfig : removeFolderFromConfig)(folderName)
+    handle("getSyncedFolders", async () => await readConfig().then(config => config.folders))
+
+    const downloadedFolders = await FS["downloadFolders"]()
+    writeConfig("folders", downloadedFolders)
+    downloadedFolders.forEach(folder => watchFolder(folder, FS))
+
+    on("syncFolder", async (_, folderName: string, upload: boolean) => {
+      (upload ? addFolderToConfig : removeFolderFromConfig)(folderName);
+      (upload ? watchFolder: unwatchFolder)(folderName, FS);
       FS["uploadFolder"](folderName, upload)
     })
   }).then(() => send(webContents, "runOnProviderReply", provider))

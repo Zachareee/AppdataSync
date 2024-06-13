@@ -1,10 +1,13 @@
 import { promises as fs } from "fs";
+import { FSWatcher, watch } from "chokidar"
 import glob from "glob"
 import path from "path"
 
 import { CloudProvider, CloudProviderString } from "../common";
-import { CONFIG_PATH } from "./paths";
+import { APPDATA_PATH, CONFIG_PATH } from "./paths";
 import { GDrive } from "../cloud/GDrive";
+
+const watchedFiles: Record<string, FSWatcher> = {}
 
 // adapted from stackoverflow answer
 // https://stackoverflow.com/a/45826189
@@ -26,6 +29,17 @@ export async function getLastModDate(absolutePath: string): Promise<Date> {
             )
         })
     })
+}
+
+export async function watchFolder(folderName: string, FS: typeof CloudProvider) {
+    watchedFiles[folderName] = watch(folderName, {
+        cwd: APPDATA_PATH.replace(/\\/g,"/"),
+        ignoreInitial: true
+    }).on("all", () => FS.uploadFolder(folderName, true))
+}
+
+export function unwatchFolder(folderName: string) {
+    watchedFiles[folderName].close()
 }
 
 export const providerStringPairing: { [provider in CloudProviderString]?: typeof CloudProvider } = {
