@@ -1,6 +1,7 @@
-import { app, BrowserWindow, IpcMain, ipcMain, WebContents } from 'electron';
+import { app, BrowserWindow, IpcMain, ipcMain, Menu, Tray, WebContents } from 'electron';
 import path from 'path';
 import { promises as fs } from "fs"
+
 import { CloudProviderString, drives, RtMSignals, MtRSignals } from './common';
 import { addFolderToConfig, providerStringPairing, readConfig, removeFolderFromConfig, unwatchFolder, watchFolder, writeConfig } from './utils/mainutils';
 import { APPDATA_PATH, TOKEN_FOLDER } from './utils/paths';
@@ -27,6 +28,17 @@ const createWindow = () => {
     autoHideMenuBar: true
   });
 
+  const tray = new Tray(path.join(__dirname, "../../resources/icon.png"))
+
+  tray.setContextMenu(Menu.buildFromTemplate([
+    {
+      label: "Adjust sync folders", click: () => mainWindow.show()
+    },
+    {
+      label: "Quit", click: () => { app.quit(); mainWindow.destroy() }
+    }
+  ]))
+
   // and load the index.html of the app.
   if (MAIN_WINDOW_VITE_DEV_SERVER_URL) {
     mainWindow.loadURL(MAIN_WINDOW_VITE_DEV_SERVER_URL);
@@ -36,6 +48,11 @@ const createWindow = () => {
 
   mainWindow.webContents.addListener("did-finish-load", () => {
     readConfig().then(({ provider }) => registerProvider(mainWindow.webContents, provider))
+  })
+
+  mainWindow.on("close", e => {
+    e.preventDefault()
+    mainWindow.hide()
   })
 
   // Open the DevTools.
@@ -112,7 +129,7 @@ async function registerProvider(webContents: WebContents, provider: CloudProvide
 
     on("syncFolder", async (_, folderName: string, upload: boolean) => {
       (upload ? addFolderToConfig : removeFolderFromConfig)(folderName);
-      (upload ? watchFolder: unwatchFolder)(folderName, FS);
+      (upload ? watchFolder : unwatchFolder)(folderName, FS);
       FS["uploadFolder"](folderName, upload)
     })
   }).then(() => send(webContents, "runOnProviderReply", provider))
