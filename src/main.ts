@@ -11,6 +11,8 @@ if (require('electron-squirrel-startup')) {
   app.quit();
 }
 
+const ICON = path.join(__dirname, "../../resources/icon.png")
+
 const createWindow = () => {
   // Create the browser window.
   const mainWindow = new BrowserWindow({
@@ -22,17 +24,19 @@ const createWindow = () => {
       symbolColor: '#74b1be',
       height: 10
     },
+    icon: ICON,
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
+      devTools: false
     },
     autoHideMenuBar: true
   });
 
-  const tray = new Tray(path.join(__dirname, "../../resources/icon.png"))
+  const tray = new Tray(ICON)
 
   tray.setContextMenu(Menu.buildFromTemplate([
     {
-      label: "Adjust sync folders", click: () => mainWindow.show()
+      label: "Open window", click: () => mainWindow.show()
     },
     {
       label: "Quit", click: () => { app.quit(); mainWindow.destroy() }
