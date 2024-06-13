@@ -1,7 +1,7 @@
 // See the Electron documentation for details on how to use preload scripts:
 // https://www.electronjs.org/docs/latest/tutorial/process-model#preload-scripts
 import { contextBridge, ipcRenderer, IpcRenderer } from "electron"
-import { RendToMainCalls, CloudProviderString, RtMSignals, MainToRendCalls, MtRSignals } from "./common"
+import { RendToMainCalls, RtMSignals, MainToRendCalls, MtRSignals } from "./common"
 
 const rtm: RendToMainCalls = {
     listAppdataFolders: () => invoke("listAppdataFolders"),
@@ -16,7 +16,7 @@ const rtm: RendToMainCalls = {
 
 const mtr: MainToRendCalls = {
     runOnProviderReply(callback) {
-        on("runOnProviderReply", (_, provider: CloudProviderString) =>
+        on("runOnProviderReply", (_, provider) =>
             callback(provider)
         )
     },

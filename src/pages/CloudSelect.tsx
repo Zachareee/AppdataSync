@@ -12,6 +12,7 @@ export default function CloudSelect() {
     const [authed, setAuthed] = useState<CloudProviderString[]>([])
 
     runOnProviderReply((provider: CloudProviderString) => gotoHome(provider))
+
     useEffect(() => {
         accountsAuthed().then(setAuthed)
     }, [])

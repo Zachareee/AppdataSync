@@ -39,7 +39,7 @@ const createWindow = () => {
   })
 
   // Open the DevTools.
-  // mainWindow.webContents.openDevTools();
+  mainWindow.webContents.openDevTools();
 };
 
 // This method will be called when Electron has finished
@@ -102,6 +102,9 @@ on("logout", async (_, provider: CloudProviderString) => providerStringPairing[p
 
 async function registerProvider(webContents: WebContents, provider: CloudProviderString) {
   return providerStringPairing[provider]?.init().then(async FS => {
+    ipcMain.removeAllListeners("syncFolder")
+    ipcMain.removeHandler("getSyncedFolders")
+
     writeConfig("folders", await FS["downloadFolders"]())
     handle("getSyncedFolders", () => readConfig().then(config => config.folders))
     on("syncFolder", async (_, folderName, upload) => {
@@ -113,7 +116,7 @@ async function registerProvider(webContents: WebContents, provider: CloudProvide
 }
 
 function send(webContents: WebContents, signal: MtRSignals, ...args: unknown[]) {
-  return webContents.send(signal, args)
+  return webContents.send(signal, ...args)
 }
 
 function handle(signal: RtMSignals, func: Parameters<IpcMain["on"]>[1]) {

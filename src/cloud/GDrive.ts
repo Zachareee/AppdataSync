@@ -30,28 +30,6 @@ export class GDrive extends CloudProvider {
         return GDrive
     }
 
-    /**
-     * Lists the names and IDs of up to 10 files.
-     * @param {OAuth2Client} authClient An authorized OAuth2 client.
-     */
-    static override async listFiles() {
-        const res = await GDrive.gDrive.files.list({
-            pageSize: 10,
-            fields: 'nextPageToken, files(id, name)',
-        });
-        const files = res.data.files;
-        if (files.length === 0) {
-            console.log('No files found.');
-            return;
-        }
-
-        console.log('Files:');
-        files.map((file) => {
-            console.log(`${file.name} (${file.id})`);
-        });
-        return "Hi"
-    }
-
     static override async abortAuth() {
         fetch("http://localhost:3000").then(data => data.text()).then(() => console.warn("Aborted"))
     }
@@ -76,10 +54,10 @@ export class GDrive extends CloudProvider {
         })
     }
 
-    static async downloadFolders(): Promise<string[]> {
+    static override async downloadFolders(): Promise<string[]> {
         const folders = await GDrive.getFolders()
         folders.forEach(file => GDrive.downloadFolder(file))
-        return folders.map(({ name }) => name)
+        return folders.map(({ name }) => name.replace(FILE_EXTENSION, ""))
     }
 
     private static async downloadFolder({ id: fileId, modifiedTime, name }: drive_v3.Schema$File) {
