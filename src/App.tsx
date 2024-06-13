@@ -1,10 +1,10 @@
-import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
+import { HashRouter as Router, Navigate, Route, Routes } from "react-router-dom";
 import Home, { homePath } from "./pages/Home";
 import CloudSelect from "./pages/CloudSelect";
 
 const App = () =>
     <>
-        <BrowserRouter>
+        <Router>
             <Routes>
                 <Route path="/">
                     <Route index element={<CloudSelect />}></Route>
@@ -12,7 +12,7 @@ const App = () =>
                     <Route path="*" element={<Navigate to={"/"} />} />
                 </Route>
             </Routes>
-        </BrowserRouter>
+        </Router>
     </>
 
 export default App
