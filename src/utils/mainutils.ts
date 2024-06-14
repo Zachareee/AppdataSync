@@ -3,11 +3,11 @@ import { FSWatcher, watch } from "chokidar"
 import glob from "glob"
 import path from "path"
 
-import { CloudProvider, CloudProviderString } from "../common";
-import { APPDATA_PATH, CONFIG_PATH } from "./paths";
+import { CloudProvider, CloudProviderString, PATHMAPPINGS, PATHTYPE } from "../common";
+import { APPDATA_PATHS, CONFIG_PATH } from "./paths";
 import { GDrive } from "../cloud/GDrive";
 
-const watchedFiles: Record<string, FSWatcher> = {}
+const watchedFiles: Partial<Record<keyof PATHTYPE, Record<string, FSWatcher>>> = {}
 
 // adapted from stackoverflow answer
 // https://stackoverflow.com/a/45826189
@@ -31,18 +31,18 @@ export async function getLastModDate(absolutePath: string): Promise<Date> {
     })
 }
 
-export async function watchFolder(folderName: string, FS: typeof CloudProvider) {
-    watchedFiles[folderName] = watch(folderName, {
-        cwd: APPDATA_PATH.replace(/\\/g,"/"),
+export async function watchFolder(context: keyof PATHTYPE, folderName: string, FS: typeof CloudProvider) {
+    watchedFiles[context][folderName] = watch(folderName, {
+        cwd: APPDATA_PATHS[context],
         ignoreInitial: true
-    }).on("all", () => FS.uploadFolder(folderName, true))
+    }).on("all", () => FS.uploadFolder(context, folderName, true))
 }
 
-export function unwatchFolder(folderName: string) {
-    watchedFiles[folderName].close()
+export function unwatchFolder(context: keyof PATHTYPE, folderName: string) {
+    watchedFiles[context][folderName].close()
 }
 
-export const providerStringPairing: { [provider in CloudProviderString]?: typeof CloudProvider } = {
+export const providerStringPairing: Record<CloudProviderString, typeof CloudProvider> = {
     googleDrive: GDrive
 }
 
@@ -50,23 +50,25 @@ export async function readConfig(): Promise<Config> {
     return fs.readFile(CONFIG_PATH, "ascii").then(data => JSON.parse(data)).catch(() => ({}))
 }
 
-export function writeConfig(key: keyof Config, value: unknown) {
-    fs.readFile(CONFIG_PATH, "ascii").then(data => write(key, value, data)).catch(() => write(key, value))
+export function writeConfig<T extends keyof Config>(key: T, value: Config[T]) {
+    readConfig().then(data => write(key, value, data)).catch(() => write(key, value))
 }
 
-export function addFolderToConfig(folderName: string) {
-    readConfig().then(config => write("folders", [...(config.folders || []), folderName], { ...config }))
+export function addFolderToConfig(context: keyof PATHTYPE, folderName: string) {
+    readConfig().then(config =>
+        write("folders", { ...(config.folders || {}), [context]: [...config.folders[context], folderName] }, { ...config }))
 }
 
-export function removeFolderFromConfig(folderName: string) {
-    readConfig().then(config => write("folders", config.folders?.filter(folder => folder !== folderName), { ...config }))
+export function removeFolderFromConfig(context: keyof PATHTYPE, folderName: string) {
+    readConfig().then(config =>
+        write("folders", { [context]: config.folders[context].filter(folder => folder !== folderName) }, { ...config }))
 }
 
-function write(key: keyof Config, value: unknown, data?: string | object) {
-    fs.writeFile(CONFIG_PATH, JSON.stringify({ ...(typeof data === "object" ? data : JSON.parse(data || "{}")), [key]: value }))
+function write<T extends keyof Config>(key: T, value: Config[T], data = {}) {
+    fs.writeFile(CONFIG_PATH, JSON.stringify({ ...data, [key]: value }))
 }
 
 interface Config {
     provider: CloudProviderString,
-    folders: string[]
+    folders: Partial<PATHMAPPINGS>
 }

@@ -5,12 +5,11 @@ import { RendToMainCalls, RtMSignals, MainToRendCalls, MtRSignals } from "./comm
 
 const rtm: RendToMainCalls = {
     listAppdataFolders: () => invoke("listAppdataFolders"),
-    showCloudFiles: () => invoke("showCloudFiles"),
     requestProvider: provider => send("requestProvider", provider),
     abortAuthentication: () => send("abortAuthentication"),
     logout: provider => send("logout", provider),
     accountsAuthed: () => invoke("accountsAuthed"),
-    syncFolder: (folderName, upload) => send("syncFolder", folderName, upload),
+    syncFolder: (context, folderName, upload) => send("syncFolder", context, folderName, upload),
     getSyncedFolders: () => invoke("getSyncedFolders")
 }
 
@@ -25,14 +24,20 @@ const mtr: MainToRendCalls = {
 contextBridge.exposeInMainWorld("RTM", rtm)
 contextBridge.exposeInMainWorld("MTR", mtr)
 
-function on(signal: MtRSignals, callback: Parameters<IpcRenderer["on"]>[1]) {
+function on<T extends MtRSignals>(signal: T, callback: callbackFunc<T>) {
     return ipcRenderer.on(signal, callback)
 }
 
-function invoke(signal: RtMSignals, ...args: unknown[]) {
+function invoke<T extends RtMSignals>(signal: T, ...args: sendFunc<T>) {
     return ipcRenderer.invoke(signal, ...args)
 }
 
-function send(signal: RtMSignals, ...args: unknown[]) {
+function send<T extends RtMSignals>(signal: T, ...args: sendFunc<T>) {
     return ipcRenderer.send(signal, ...args)
 }
+
+type sendFunc<T extends RtMSignals> =
+    Parameters<RendToMainCalls[T]>
+
+type callbackFunc<T extends MtRSignals> = 
+  (event: Parameters<Parameters<IpcRenderer["on"]>[1]>[0], ...args: Parameters<Parameters<MainToRendCalls[T]>[0]>) => ReturnType<MainToRendCalls[T]>

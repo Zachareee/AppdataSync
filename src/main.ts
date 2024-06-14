@@ -2,9 +2,9 @@ import { app, BrowserWindow, IpcMain, ipcMain, Menu, Tray, WebContents } from 'e
 import path from 'path';
 import { promises as fs } from "fs"
 
-import { CloudProviderString, drives, RtMSignals, MtRSignals } from './common';
+import { CloudProviderString, drives, RtMSignals, MtRSignals, PATHTYPE, RendToMainCalls, MainToRendCalls } from './common';
 import { addFolderToConfig, providerStringPairing, readConfig, removeFolderFromConfig, unwatchFolder, watchFolder, writeConfig } from './utils/mainutils';
-import { APPDATA_PATH, TOKEN_FOLDER } from './utils/paths';
+import { TOKEN_FOLDER } from './utils/paths';
 
 // Handle creating/removing shortcuts on Windows when installing/uninstalling.
 if (require('electron-squirrel-startup')) {
@@ -15,7 +15,7 @@ const lock = app.requestSingleInstanceLock()
 let window: BrowserWindow;
 
 if (!lock) app.quit()
-else app.on("second-instance", () => {window?.restore(); window?.focus()})
+else app.on("second-instance", () => { window?.restore(); window?.focus() })
 
 const ICON = path.join(__dirname, "icon.png")
 
@@ -32,7 +32,7 @@ const createWindow = () => {
     },
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
-      devTools: false
+      devTools: true
     },
     autoHideMenuBar: true,
     show: false
@@ -100,7 +100,7 @@ app.on('activate', () => {
 fs.mkdir(TOKEN_FOLDER, { recursive: true })
 
 // Read Appdata folders
-handle("listAppdataFolders", async () => await fs.readdir(APPDATA_PATH))
+handle("listAppdataFolders", async () => await fs.readdir(path.join(app.getPath("appData"), "..")))
 
 // Registers cloud methods
 on("requestProvider", async (event, provider: CloudProviderString) => {
@@ -137,25 +137,33 @@ async function registerProvider(webContents: WebContents, provider: CloudProvide
 
     const downloadedFolders = await FS["downloadFolders"]()
     writeConfig("folders", downloadedFolders)
-    downloadedFolders.forEach(folder => watchFolder(folder, FS))
+    Object.keys(downloadedFolders)
+      .forEach(context => downloadedFolders[<keyof PATHTYPE>context]
+        .forEach(folder => watchFolder(<keyof PATHTYPE>context, folder, FS)))
 
-    on("syncFolder", async (_, folderName: string, upload: boolean) => {
-      (upload ? addFolderToConfig : removeFolderFromConfig)(folderName);
-      (upload ? watchFolder : unwatchFolder)(folderName, FS);
-      FS["uploadFolder"](folderName, upload)
+    on("syncFolder", async (_, context, folderName, upload) => {
+      (upload ? addFolderToConfig : removeFolderFromConfig)(context, folderName);
+      (upload ? watchFolder : unwatchFolder)(context, folderName, FS);
+      FS["uploadFolder"](context, folderName, upload)
     })
   }).then(() => send(webContents, "runOnProviderReply", provider))
     .catch(console.warn)
 }
 
-function send(webContents: WebContents, signal: MtRSignals, ...args: unknown[]) {
+function send<T extends MtRSignals>(webContents: WebContents, signal: T, ...args: callbackFunc<T>) {
   return webContents.send(signal, ...args)
 }
 
-function handle(signal: RtMSignals, func: Parameters<IpcMain["on"]>[1]) {
+function handle<T extends RtMSignals>(signal: T, func: listenFunc<T, "handle">) {
   return ipcMain.handle(signal, func)
 }
 
-function on(signal: RtMSignals, func: Parameters<IpcMain["on"]>[1]) {
+function on<T extends RtMSignals>(signal: T, func: listenFunc<T, "on">) {
   return ipcMain.on(signal, func)
 }
+
+// I spent 15 mins on this I'm proud of it idc
+type listenFunc<T extends RtMSignals, K extends keyof IpcMain> =
+  (event: Parameters<Parameters<IpcMain[K]>[1]>[0], ...args: Parameters<RendToMainCalls[T]>) => ReturnType<RendToMainCalls[T]>
+
+type callbackFunc<T extends MtRSignals> = Parameters<Parameters<MainToRendCalls[T]>[0]>
