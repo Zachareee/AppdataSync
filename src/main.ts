@@ -15,7 +15,7 @@ const lock = app.requestSingleInstanceLock()
 let window: BrowserWindow;
 
 if (!lock) app.quit()
-else app.on("second-instance", () => window?.restore())
+else app.on("second-instance", () => {window?.restore(); window?.focus()})
 
 const ICON = path.join(__dirname, "icon.png")
 
@@ -34,7 +34,8 @@ const createWindow = () => {
       preload: path.join(__dirname, 'preload.js'),
       devTools: false
     },
-    autoHideMenuBar: true
+    autoHideMenuBar: true,
+    show: false
   });
 
   const tray = new Tray(ICON).on("double-click", () => mainWindow.show())
@@ -57,6 +58,7 @@ const createWindow = () => {
 
   mainWindow.webContents.addListener("did-finish-load", () => {
     readConfig().then(({ provider }) => registerProvider(mainWindow.webContents, provider))
+    mainWindow.show()
   })
 
   mainWindow.on("close", e => {
