@@ -11,7 +11,13 @@ if (require('electron-squirrel-startup')) {
   app.quit();
 }
 
-const ICON = path.join(__dirname, "../../resources/icon.png")
+const lock = app.requestSingleInstanceLock()
+let window: BrowserWindow;
+
+if (!lock) app.quit()
+else app.on("second-instance", () => window?.restore())
+
+const ICON = path.join(__dirname, "icon.png")
 
 const createWindow = () => {
   // Create the browser window.
@@ -24,7 +30,6 @@ const createWindow = () => {
       symbolColor: '#74b1be',
       height: 10
     },
-    icon: ICON,
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
       devTools: false
@@ -32,7 +37,7 @@ const createWindow = () => {
     autoHideMenuBar: true
   });
 
-  const tray = new Tray(ICON)
+  const tray = new Tray(ICON).on("double-click", () => mainWindow.show())
 
   tray.setContextMenu(Menu.buildFromTemplate([
     {
@@ -61,12 +66,13 @@ const createWindow = () => {
 
   // Open the DevTools.
   // mainWindow.webContents.openDevTools();
+  return mainWindow
 };
 
 // This method will be called when Electron has finished
 // initialization and is ready to create browser windows.
 // Some APIs can only be used after this event occurs.
-app.on('ready', createWindow);
+app.on('ready', () => (window = createWindow()));
 
 // Quit when all windows are closed, except on macOS. There, it's common
 // for applications and their menu bar to stay active until the user quits

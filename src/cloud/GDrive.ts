@@ -7,9 +7,10 @@ import { c, x } from "tar"
 import { Readable } from "stream"
 
 import { CloudProvider, drives } from "../common";
-import { APPDATA_PATH, APP_NAME, TOKEN_FOLDER } from "../utils/paths";
+import { APPDATA_PATH, APP_NAME, CREDENTIALS_PATH, TOKEN_FOLDER } from "../utils/paths";
 import { getLastModDate } from "../utils/mainutils";
 
+const GDRIVE_CREDENTIALS = path.join(CREDENTIALS_PATH, 'GAPI.json');
 const TOKEN_PATH = `${TOKEN_FOLDER}/${drives["googleDrive"].tokenFile}`
 const FILE_EXTENSION = /.gzip$/
 
@@ -146,7 +147,6 @@ const SCOPES = ['https://www.googleapis.com/auth/drive.file'];
 // The file token.json stores the user's access and refresh tokens, and is
 // created automatically when the authorization flow completes for the first
 // time.
-const CREDENTIALS_PATH = path.join(process.cwd(), 'credentials/GAPI.json');
 
 /**
  * Reads previously authorized credentials from the save file.
@@ -167,7 +167,7 @@ async function loadSavedCredentialsIfExist() {
  */
 async function saveCredentials(client: OAuth2Client) {
     if (!client.credentials) return client
-    const content = await fs.readFile(CREDENTIALS_PATH, "ascii");
+    const content = await fs.readFile(GDRIVE_CREDENTIALS, "ascii");
     const keys = JSON.parse(content);
     const { client_id, client_secret } = keys.installed || keys.web;
     const payload = JSON.stringify({
@@ -190,7 +190,7 @@ async function authorize() {
     } catch {
         return authenticate({
             scopes: SCOPES,
-            keyfilePath: CREDENTIALS_PATH,
+            keyfilePath: GDRIVE_CREDENTIALS,
         }).then(saveCredentials)
     }
 }
