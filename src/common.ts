@@ -6,7 +6,6 @@ export type PATHMAPPINGS = Record<keyof PATHTYPE, string[]>
 // cannot be in mainutils due to conflicts with init of GDrive
 export class CloudProvider {
     static async init(): Promise<typeof CloudProvider> { return notImplemented() }
-    static async listFiles(): Promise<string> { return notImplemented() }
     static async abortAuth(): Promise<void> { return notImplemented() }
     static async logout(): Promise<void> { return notImplemented() }
     static async uploadFolder(context: keyof PATHTYPE, folderName: string, upload: boolean): Promise<void> { return notImplemented(context, folderName, upload) }
@@ -24,7 +23,7 @@ export interface RendToMainCalls {
 }
 
 export interface MainToRendCalls {
-    runOnProviderReply(callback: (provider: string) => void): void
+    runOnProviderReply(callback: (provider: CloudProviderString) => void): void
 }
 
 export type RtMSignals = keyof RendToMainCalls

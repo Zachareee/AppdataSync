@@ -100,10 +100,11 @@ app.on('activate', () => {
 fs.mkdir(TOKEN_FOLDER, { recursive: true })
 
 // Read Appdata folders
-handle("listAppdataFolders", async () => await fs.readdir(path.join(app.getPath("appData"), "..")))
+const appdatapath = path.join(app.getPath("appData"), "..")
+handle("listAppdataFolders", async () => await fs.readdir(appdatapath))
 
 // Registers cloud methods
-on("requestProvider", async (event, provider: CloudProviderString) => {
+on("requestProvider", async (event, provider) => {
   writeConfig("provider", provider)
   return registerProvider(event.sender, provider)
 })
@@ -127,7 +128,7 @@ on("abortAuthentication", async () => {
   writeConfig("provider", null)
 })
 
-on("logout", async (_, provider: CloudProviderString) => providerStringPairing[provider].logout())
+on("logout", async (_, provider) => providerStringPairing[provider].logout())
 
 async function registerProvider(webContents: WebContents, provider: CloudProviderString) {
   return providerStringPairing[provider]?.init().then(async FS => {
