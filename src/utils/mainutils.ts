@@ -7,7 +7,7 @@ import { CloudProvider, CloudProviderString, PATHMAPPINGS, PATHTYPE } from "../c
 import { APPDATA_PATHS, CONFIG_PATH } from "./paths";
 import { GDrive } from "../cloud/GDrive";
 
-const watchedFiles: Partial<Record<PATHTYPE, Record<string, FSWatcher>>> = {}
+const watchedFiles: Partial<Record<PATHTYPE, Record<string, FSWatcher>>> = { "LOCAL": {}, "LOCALLOW": {}, "ROAMING": {} }
 
 // adapted from stackoverflow answer
 // https://stackoverflow.com/a/45826189

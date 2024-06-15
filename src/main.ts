@@ -67,7 +67,7 @@ const createWindow = () => {
   })
 
   // Open the DevTools.
-  // mainWindow.webContents.openDevTools();
+  mainWindow.webContents.openDevTools();
   return mainWindow
 };
 
@@ -101,7 +101,11 @@ fs.mkdir(TOKEN_FOLDER, { recursive: true })
 
 // Read Appdata folders
 const appdatapath = path.join(app.getPath("appData"), "..")
-handle("listAppdataFolders", async () => await fs.readdir(appdatapath))
+handle("listAppdataFolders", async () =>
+  Object.fromEntries(await Promise.all(await fs.readdir(appdatapath)
+    .then(roots => roots.map(folder =>
+      fs.readdir(path.join(appdatapath, folder)).then(files => [folder, files])))))
+)
 
 // Registers cloud methods
 on("requestProvider", async (event, provider) => {

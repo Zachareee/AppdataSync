@@ -40,7 +40,7 @@ export class GDrive extends CloudProvider {
     // create if it doesn't
     static override async uploadFolder(context: PATHTYPE, name: string, upload: boolean) {
         GDrive.gDrive.files.list({
-            q: `name = '${name}${FILE_EXTENSION}' and '${GDrive.folderMapping[context]}' in parents and trashed = false`,
+            q: `name = '${name}.gzip' and '${GDrive.folderMapping[context]}' in parents and trashed = false`,
             pageSize: 1,
             fields: "files(id)"
         }).then(res => res.data.files).then(arr => {
@@ -55,14 +55,13 @@ export class GDrive extends CloudProvider {
         const folders = await GDrive.getFolders()
         Object.entries(folders).forEach(([context, files]) => files.forEach(file => GDrive.downloadFolder(<PATHTYPE>context, file)))
         return <PATHMAPPINGS>Object.fromEntries(
-            Object.entries(folders)
-                .map(([context, filearr]) => [context, filearr.map(({ name }) => name)]))
+            Object.entries(folders).map(([context, filearr]) => [context, filearr.map(({ name }) => name)]))
     }
 
     private static async downloadFolder(context: PATHTYPE, { id: fileId, modifiedTime, name }: drive_v3.Schema$File) {
         const onlineModTime = new Date(modifiedTime)
         const offlineModTime = await getLastModDate(path.join(APPDATA_PATHS[context], name.replace(FILE_EXTENSION, ""))).catch(() => new Date(1970, 0))
-        if (onlineModTime <= offlineModTime) return
+        if (onlineModTime <= offlineModTime) return this.uploadFolder(context, name, true)
         GDrive.gDrive.files.get({ fileId, alt: "media" }, { responseType: "stream" }, (_, { data }) => {
             data.pipe(x({ cwd: path.join(APPDATA_PATHS[context], "test") }))
         })

@@ -29,7 +29,7 @@ function on<T extends MtRSignals>(signal: T, callback: callbackFunc<T>) {
 }
 
 function invoke<T extends RtMSignals>(signal: T, ...args: sendFunc<T>) {
-    return ipcRenderer.invoke(signal, ...args)
+    return <ReturnType<RendToMainCalls[T]>>ipcRenderer.invoke(signal, ...args)
 }
 
 function send<T extends RtMSignals>(signal: T, ...args: sendFunc<T>) {
@@ -39,5 +39,5 @@ function send<T extends RtMSignals>(signal: T, ...args: sendFunc<T>) {
 type sendFunc<T extends RtMSignals> =
     Parameters<RendToMainCalls[T]>
 
-type callbackFunc<T extends MtRSignals> = 
-  (event: Parameters<Parameters<IpcRenderer["on"]>[1]>[0], ...args: Parameters<Parameters<MainToRendCalls[T]>[0]>) => ReturnType<MainToRendCalls[T]>
+type callbackFunc<T extends MtRSignals> =
+    (event: Parameters<Parameters<IpcRenderer["on"]>[1]>[0], ...args: Parameters<Parameters<MainToRendCalls[T]>[0]>) => ReturnType<MainToRendCalls[T]>

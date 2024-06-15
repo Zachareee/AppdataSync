@@ -1,6 +1,6 @@
 import GoogleDriveIcon from "./img/GoogleDriveIcon.svg"
 
-const PATHTYPE_KEYS = ["ROAMING", "LOCAL", "LOCALLOW"] as const
+const PATHTYPE_KEYS = ["LOCAL", "LOCALLOW", "ROAMING"] as const
 export { PATHTYPE_KEYS as PATHTYPE }
 export type PATHTYPE = typeof PATHTYPE_KEYS[number]
 export type PATHMAPPINGS = Record<PATHTYPE, string[]>
@@ -16,7 +16,7 @@ export class CloudProvider {
 }
 
 export interface RendToMainCalls {
-    listAppdataFolders(): Promise<string[]>
+    listAppdataFolders(): Promise<Partial<PATHMAPPINGS>>
     requestProvider(provider: CloudProviderString): void
     abortAuthentication(): void
     logout(provider: CloudProviderString): void
