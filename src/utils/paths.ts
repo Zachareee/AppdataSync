@@ -10,7 +10,7 @@ export const CONFIG_PATH = join(APPDATA_SYNC_PATH, "config.json")
 
 const LOCAL = process.env["localappdata"]
 
-export const APPDATA_PATHS: PATHTYPE = {
+export const APPDATA_PATHS: Record<PATHTYPE, string> = {
     ROAMING: app.getPath("appData"),
     LOCAL,
     LOCALLOW: LOCAL + "Low"

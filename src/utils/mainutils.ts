@@ -7,7 +7,7 @@ import { CloudProvider, CloudProviderString, PATHMAPPINGS, PATHTYPE } from "../c
 import { APPDATA_PATHS, CONFIG_PATH } from "./paths";
 import { GDrive } from "../cloud/GDrive";
 
-const watchedFiles: Partial<Record<keyof PATHTYPE, Record<string, FSWatcher>>> = {}
+const watchedFiles: Partial<Record<PATHTYPE, Record<string, FSWatcher>>> = {}
 
 // adapted from stackoverflow answer
 // https://stackoverflow.com/a/45826189
@@ -31,14 +31,14 @@ export async function getLastModDate(absolutePath: string): Promise<Date> {
     })
 }
 
-export async function watchFolder(context: keyof PATHTYPE, folderName: string, FS: typeof CloudProvider) {
+export async function watchFolder(context: PATHTYPE, folderName: string, FS: typeof CloudProvider) {
     watchedFiles[context][folderName] = watch(folderName, {
         cwd: APPDATA_PATHS[context],
         ignoreInitial: true
     }).on("all", () => FS.uploadFolder(context, folderName, true))
 }
 
-export function unwatchFolder(context: keyof PATHTYPE, folderName: string) {
+export function unwatchFolder(context: PATHTYPE, folderName: string) {
     watchedFiles[context][folderName].close()
 }
 
@@ -54,12 +54,12 @@ export function writeConfig<T extends keyof Config>(key: T, value: Config[T]) {
     readConfig().then(data => write(key, value, data)).catch(() => write(key, value))
 }
 
-export function addFolderToConfig(context: keyof PATHTYPE, folderName: string) {
+export function addFolderToConfig(context: PATHTYPE, folderName: string) {
     readConfig().then(config =>
         write("folders", { ...(config.folders || {}), [context]: [...config.folders[context], folderName] }, { ...config }))
 }
 
-export function removeFolderFromConfig(context: keyof PATHTYPE, folderName: string) {
+export function removeFolderFromConfig(context: PATHTYPE, folderName: string) {
     readConfig().then(config =>
         write("folders", { [context]: config.folders[context].filter(folder => folder !== folderName) }, { ...config }))
 }

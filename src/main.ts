@@ -138,13 +138,13 @@ async function registerProvider(webContents: WebContents, provider: CloudProvide
 
     const downloadedFolders = await FS["downloadFolders"]()
     writeConfig("folders", downloadedFolders)
-    Object.keys(downloadedFolders)
-      .forEach(context => downloadedFolders[<keyof PATHTYPE>context]
-        .forEach(folder => watchFolder(<keyof PATHTYPE>context, folder, FS)))
+    Object.entries(downloadedFolders)
+      .forEach(([context, folders]) => folders
+        .forEach(folder => watchFolder(<PATHTYPE>context, folder, FS)))
 
     on("syncFolder", async (_, context, folderName, upload) => {
-      (upload ? addFolderToConfig : removeFolderFromConfig)(context, folderName);
-      (upload ? watchFolder : unwatchFolder)(context, folderName, FS);
+      (upload ? [addFolderToConfig, watchFolder] : [removeFolderFromConfig, unwatchFolder])
+        .forEach(func => func(context, folderName, FS))
       FS["uploadFolder"](context, folderName, upload)
     })
   }).then(() => send(webContents, "runOnProviderReply", provider))

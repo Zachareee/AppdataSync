@@ -17,7 +17,7 @@ const FILE_EXTENSION = /.gzip$/
 export class GDrive extends CloudProvider {
     private static gDrive: drive_v3.Drive
     private static authClient: OAuth2Client
-    private static folderMapping: PATHTYPE
+    private static folderMapping: Record<PATHTYPE, string>
 
     static override async init() {
         GDrive.authClient = await authorize()
@@ -38,7 +38,7 @@ export class GDrive extends CloudProvider {
 
     // Tests if folder exists, update if it does
     // create if it doesn't
-    static override async uploadFolder(context: keyof PATHTYPE, name: string, upload: boolean) {
+    static override async uploadFolder(context: PATHTYPE, name: string, upload: boolean) {
         GDrive.gDrive.files.list({
             q: `name = '${name}${FILE_EXTENSION}' and '${GDrive.folderMapping[context]}' in parents and trashed = false`,
             pageSize: 1,
@@ -53,13 +53,13 @@ export class GDrive extends CloudProvider {
 
     static override async downloadFolders(): Promise<PATHMAPPINGS> {
         const folders = await GDrive.getFolders()
-        Object.entries(folders).forEach(([context, files]) => files.forEach(file => GDrive.downloadFolder(<keyof PATHTYPE>context, file)))
+        Object.entries(folders).forEach(([context, files]) => files.forEach(file => GDrive.downloadFolder(<PATHTYPE>context, file)))
         return <PATHMAPPINGS>Object.fromEntries(
             Object.entries(folders)
                 .map(([context, filearr]) => [context, filearr.map(({ name }) => name)]))
     }
 
-    private static async downloadFolder(context: keyof PATHTYPE, { id: fileId, modifiedTime, name }: drive_v3.Schema$File) {
+    private static async downloadFolder(context: PATHTYPE, { id: fileId, modifiedTime, name }: drive_v3.Schema$File) {
         const onlineModTime = new Date(modifiedTime)
         const offlineModTime = await getLastModDate(path.join(APPDATA_PATHS[context], name.replace(FILE_EXTENSION, ""))).catch(() => new Date(1970, 0))
         if (onlineModTime <= offlineModTime) return
@@ -69,29 +69,29 @@ export class GDrive extends CloudProvider {
     }
 
     private static async getFolders() {
-        const folders = <Record<keyof PATHTYPE, drive_v3.Schema$File[]>>Object.fromEntries(Object.keys(APPDATA_PATHS).map(key => [key, []]))
-        await Promise.all(Object.keys(APPDATA_PATHS).map(async path => {
+        const folders = <Record<PATHTYPE, drive_v3.Schema$File[]>>Object.fromEntries(PATHTYPE.map(key => [key, []]))
+        await Promise.all(PATHTYPE.map(async path => {
             let files, nextPageToken
             do {
                 ({ files, nextPageToken } = await GDrive.gDrive.files.list({
-                    q: `'${GDrive.folderMapping[<keyof PATHTYPE>path]}' in parents and trashed = false`,
+                    q: `'${GDrive.folderMapping[<PATHTYPE>path]}' in parents and trashed = false`,
                     fields: "nextPageToken, files(id, name, modifiedTime)",
                     pageToken: nextPageToken
                 }).then(res => res.data))
-                folders[<keyof PATHTYPE>path].push(...files)
+                folders[<PATHTYPE>path].push(...files)
             } while (nextPageToken)
         }))
 
         return folders
     }
 
-    private static async checkHomeFolder(): Promise<Record<keyof PATHTYPE, string>> {
+    private static async checkHomeFolder(): Promise<Record<PATHTYPE, string>> {
         return GDrive.gDrive.files.list({
             q: `name = '${APP_NAME}' and mimeType = '${FILETYPE.FOLDER}' and trashed = false`,
             pageSize: 1,
             fields: "files(id)"
         }).then(async ({ data: { files: [{ id }] } }) =>
-            Object.fromEntries(await Promise.all(Object.keys(APPDATA_PATHS).map(path =>
+            Object.fromEntries(await Promise.all(PATHTYPE.map(path =>
                 GDrive.gDrive.files.list({
                     q: `name = '${path}' and mimeType = '${FILETYPE.FOLDER}' and trashed = false and '${id}' in parents`,
                     pageSize: 1,
@@ -101,7 +101,7 @@ export class GDrive extends CloudProvider {
         )
     }
 
-    private static async createHomeFolder(): Promise<Record<keyof PATHTYPE, string>> {
+    private static async createHomeFolder(): Promise<Record<PATHTYPE, string>> {
         return GDrive.gDrive.files.create({
             requestBody: {
                 name: APP_NAME,
@@ -109,7 +109,7 @@ export class GDrive extends CloudProvider {
                 mimeType: FILETYPE.FOLDER
             }, fields: "id"
         }).then(async ({ data: { id: parentID } }) => Object.fromEntries(await Promise.all(
-            Object.keys(APPDATA_PATHS).map(name => GDrive.gDrive.files.create({
+            PATHTYPE.map(name => GDrive.gDrive.files.create({
                 requestBody: {
                     name,
                     parents: [parentID],
@@ -119,7 +119,7 @@ export class GDrive extends CloudProvider {
         )
     }
 
-    private static async updateFile(context: keyof PATHTYPE, pathName: string, id: string) {
+    private static async updateFile(context: PATHTYPE, pathName: string, id: string) {
         return this.createUploadBody(context, pathName, id).then(body => GDrive.gDrive.files.update(body))
     }
 
@@ -127,13 +127,13 @@ export class GDrive extends CloudProvider {
         return GDrive.gDrive.files.delete({ fileId })
     }
 
-    private static async createFile(context: keyof PATHTYPE, pathName: string) {
+    private static async createFile(context: PATHTYPE, pathName: string) {
         return this.createUploadBody(context, pathName).then(body => GDrive.gDrive.files.create(body))
     }
 
-    private static async createUploadBody(context: keyof PATHTYPE, pathName: string, fileId: string): Promise<drive_v3.Params$Resource$Files$Update>
-    private static async createUploadBody(context: keyof PATHTYPE, pathName: string, fileId?: string): Promise<drive_v3.Params$Resource$Files$Create>
-    private static async createUploadBody(context: keyof PATHTYPE, pathName: string, fileId?: string) {
+    private static async createUploadBody(context: PATHTYPE, pathName: string, fileId: string): Promise<drive_v3.Params$Resource$Files$Update>
+    private static async createUploadBody(context: PATHTYPE, pathName: string, fileId?: string): Promise<drive_v3.Params$Resource$Files$Create>
+    private static async createUploadBody(context: PATHTYPE, pathName: string, fileId?: string) {
         return getLastModDate(path.join(APPDATA_PATHS[context], pathName))
             .then(date => date.toISOString())
             .then(modifiedTime => ({
