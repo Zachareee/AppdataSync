@@ -9,6 +9,13 @@ export default function AppdataFolder({ provider }: { provider: CloudProviderStr
     const [appdataFolders, setAppdataFolders] = useState<Partial<Record<PATHTYPE, Folder>>>({})
     const [showFolder, setShowFolder] = useState<PATHTYPE | void>(null)
 
+    function updateFolder(context: PATHTYPE, folder: Folder) {
+        setAppdataFolders(folders => {
+            folders[context] = folder
+            return { ...folders }
+        })
+    }
+
     if (!Object.keys(appdataFolders).length) listAppdataFolders()
         .then(folders => getSyncedFolders()
             .then(results => setAppdataFolders(
@@ -28,7 +35,7 @@ export default function AppdataFolder({ provider }: { provider: CloudProviderStr
                 {showFolder && <span className="text-slate-300">Now in {showFolder}</span>}
                 <div className="no-drag overflow-auto">
                     {showFolder
-                        ? <Folders context={showFolder} folder={appdataFolders[showFolder]} />
+                        ? <Folders context={showFolder} folder={appdataFolders[showFolder]} updateFunc={folder => updateFolder(showFolder, folder)} />
                         : PATHTYPE.map((path, key) => <MidButton onClick={() => setShowFolder(path)} key={key}>
                             {path}
                         </MidButton>)
