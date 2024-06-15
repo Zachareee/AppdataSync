@@ -63,11 +63,13 @@ export class GDrive extends CloudProvider {
         const onlineModTime = new Date(modifiedTime)
         const offlineModTime = await getLastModDate(path.join(APPDATA_PATHS[context], nameWithoutFileExt)).catch(() => new Date(1970, 0))
 
-        if (onlineModTime === offlineModTime) return
-        else if (onlineModTime < offlineModTime) return this.uploadFolder(context, nameWithoutFileExt, true)
-        else GDrive.gDrive.files.get({ fileId, alt: "media" }, { responseType: "stream" }, (_, { data }) => {
-            data.pipe(x({ cwd: path.join(APPDATA_PATHS[context], "test") }))
-        })
+        if (onlineModTime < offlineModTime) this.uploadFolder(context, nameWithoutFileExt, true)
+        else if (onlineModTime > offlineModTime) {
+            console.log("Now downloading ", name)
+            GDrive.gDrive.files.get({ fileId, alt: "media" }, { responseType: "stream" }, (_, { data }) => {
+                data.pipe(x({ cwd: APPDATA_PATHS[context] }))
+            })
+        }
     }
 
     private static async getFolders() {

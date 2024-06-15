@@ -1,13 +1,11 @@
-import { createContext, useState } from "react";
+import { useState } from "react";
 
 import Folders from "./Folders";
-import { PATHTYPE } from "../common";
+import { CloudProviderString, PATHTYPE, drives } from "../common";
 import { getSyncedFolders, listAppdataFolders } from "../utils/windowutils";
 import MidButton from "./MidButton";
 
-export const AppdataContext = createContext(null)
-
-export default function AppdataFolder() {
+export default function AppdataFolder({ provider }: { provider: CloudProviderString }) {
     const [appdataFolders, setAppdataFolders] = useState<Partial<Record<PATHTYPE, Folder>>>({})
     const [showFolder, setShowFolder] = useState<PATHTYPE | void>(null)
 
@@ -21,15 +19,22 @@ export default function AppdataFolder() {
             )))
 
     return (
-        <div className="no-drag">
-            <AppdataContext.Provider value={{ return: () => setShowFolder() }}>
-                {showFolder
-                    ? <Folders context={showFolder} folder={appdataFolders[showFolder]} />
-                    : PATHTYPE.map((path, key) => <MidButton onClick={() => setShowFolder(path)} key={key}>
-                        {path}
-                    </MidButton>)
-                }
-            </AppdataContext.Provider>
+        <div className="grid grid-cols-3 justify-center">
+            <div className="text-center flex justify-center items-center h-screen no-drag">
+                {showFolder && <MidButton onClick={() => setShowFolder()}>Return to appdata folders</MidButton>}
+            </div>
+            <div className="flex flex-col items-center h-screen">
+                <span className="text-slate-300">Current provider: {drives[provider as CloudProviderString].driveName}</span>
+                {showFolder && <span className="text-slate-300">Now in {showFolder}</span>}
+                <div className="no-drag overflow-auto">
+                    {showFolder
+                        ? <Folders context={showFolder} folder={appdataFolders[showFolder]} />
+                        : PATHTYPE.map((path, key) => <MidButton onClick={() => setShowFolder(path)} key={key}>
+                            {path}
+                        </MidButton>)
+                    }
+                </div>
+            </div>
         </div>
     )
 }
