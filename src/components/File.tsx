@@ -15,7 +15,7 @@ export default function File({ name, clicked, context }: { name: string, clicked
     }
 
     return <MidButton onClick={click} clicked={clicked}>
-        <span className="text-lg font-bold select-none">{name}</span>
+        <span>{name}</span>
         <input type="checkbox" className="rounded-full size-8 cursor-pointer" onFocus={(e) => e.target.blur()} checked={checked} readOnly />
     </MidButton>
 }

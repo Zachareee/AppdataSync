@@ -55,7 +55,7 @@ export class GDrive extends CloudProvider {
         const folders = await GDrive.getFolders()
         Object.entries(folders).forEach(([context, files]) => files.forEach(file => GDrive.downloadFolder(<PATHTYPE>context, file)))
         return <PATHMAPPINGS>Object.fromEntries(
-            Object.entries(folders).map(([context, filearr]) => [context, filearr.map(({ name }) => name)]))
+            Object.entries(folders).map(([context, filearr]) => [context, filearr.map(({ name }) => name.replace(FILE_EXTENSION, ""))]))
     }
 
     private static async downloadFolder(context: PATHTYPE, { id: fileId, modifiedTime, name }: drive_v3.Schema$File) {
