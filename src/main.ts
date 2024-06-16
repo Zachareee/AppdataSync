@@ -32,7 +32,7 @@ const createWindow = () => {
     },
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
-      devTools: true
+      devTools: false
     },
     autoHideMenuBar: true,
     show: false
@@ -104,7 +104,7 @@ const appdatapath = path.join(app.getPath("appData"), "..")
 handle("listAppdataFolders", async () =>
   Object.fromEntries(await Promise.all(await fs.readdir(appdatapath)
     .then(roots => roots.map(folder =>
-      fs.readdir(path.join(appdatapath, folder)).then(files => [folder, files])))))
+      fs.readdir(path.join(appdatapath, folder)).then(files => [folder.toUpperCase(), files])))))
 )
 
 // Registers cloud methods

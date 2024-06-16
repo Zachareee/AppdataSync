@@ -20,15 +20,17 @@ export default function AppdataFolder({ provider }: { provider: CloudProviderStr
         .then(folders => getSyncedFolders()
             .then(results => setAppdataFolders(
                 Object.fromEntries(Object.entries(folders).map(
-                    ([context, files]) => [context.toUpperCase(), files.map(
-                        name => ({ name, checked: results[context.toUpperCase() as PATHTYPE]?.includes(name) ?? false })
+                    ([context, files]) => [context, files.map(
+                        name => ({ name, checked: results[context as PATHTYPE]?.includes(name) ?? false })
                     )]))
             )))
 
     return (
         <div className="grid grid-cols-3 justify-center">
-            <div className="text-center flex justify-center items-center h-screen no-drag">
-                {showFolder && <MidButton onClick={() => setShowFolder()}>Return to appdata folders</MidButton>}
+            <div className="text-center flex justify-center items-center h-screen">
+                <div className="no-drag">
+                    {showFolder && <MidButton onClick={() => setShowFolder()}>Return to appdata folders</MidButton>}
+                </div>
             </div>
             <div className="flex flex-col items-center h-screen">
                 <span className="text-slate-300">Current provider: {drives[provider as CloudProviderString].driveName}</span>
