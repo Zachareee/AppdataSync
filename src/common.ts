@@ -4,6 +4,7 @@ const PATHTYPE_KEYS = ["LOCAL", "LOCALLOW", "ROAMING"] as const
 export { PATHTYPE_KEYS as PATHTYPE }
 export type PATHTYPE = typeof PATHTYPE_KEYS[number]
 export type PATHMAPPINGS = Record<PATHTYPE, string[]>
+export type FILENAMEPROGRESSPAIR = Promise<Record<PATHTYPE, Record<string, Promise<unknown>>>>
 
 // cannot be in mainutils due to conflicts with init of GDrive
 export class CloudProvider {
@@ -12,7 +13,7 @@ export class CloudProvider {
     static async logout(): Promise<void> { return notImplemented() }
     static async uploadFolder(context: PATHTYPE, folderName: string, upload: boolean):
         Promise<void> { return notImplemented(context, folderName, upload) }
-    static async downloadFolders(): Promise<PATHMAPPINGS> { return notImplemented() }
+    static async downloadFolders(): FILENAMEPROGRESSPAIR { return notImplemented() }
 }
 
 export interface RendToMainCalls {

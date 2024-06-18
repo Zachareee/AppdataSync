@@ -3,7 +3,7 @@ import path from 'path';
 import { promises as fs } from "fs"
 
 import { CloudProviderString, drives, RtMSignals, MtRSignals, PATHTYPE, RendToMainCalls, MainToRendCalls } from './common';
-import { addFolderToConfig, providerStringPairing, readConfig, removeFolderFromConfig, unwatchFolder, watchFolder, writeConfig } from './utils/mainutils';
+import { addFolderToConfig, providerStringPairing, readConfig, removeFolderFromConfig, unwatchAll, unwatchFolder, watchFolder, writeConfig } from './utils/mainutils';
 import { TOKEN_FOLDER } from './utils/paths';
 
 // Handle creating/removing shortcuts on Windows when installing/uninstalling.
@@ -56,7 +56,7 @@ const createWindow = () => {
     mainWindow.loadFile(path.join(__dirname, `../renderer/${MAIN_WINDOW_VITE_NAME}/index.html`));
   }
 
-  mainWindow.webContents.addListener("did-finish-load", () => {
+  mainWindow.webContents.once("did-finish-load", () => {
     readConfig().then(({ provider }) => registerProvider(mainWindow.webContents, provider))
     mainWindow.show()
   })
@@ -92,6 +92,10 @@ app.on('activate', () => {
     createWindow();
   }
 });
+
+app.on("quit", async () => {
+  await unwatchAll()
+})
 
 // In this file you can include the rest of your app's specific main process
 // code. You can also put them in separate files and import them here.
@@ -137,14 +141,19 @@ on("logout", async (_, provider) => providerStringPairing[provider].logout())
 async function registerProvider(webContents: WebContents, provider: CloudProviderString) {
   return providerStringPairing[provider]?.init().then(async FS => {
     ipcMain.removeAllListeners("syncFolder").removeHandler("getSyncedFolders")
+    await unwatchAll()
 
     handle("getSyncedFolders", async () => await readConfig().then(config => config.folders))
 
-    const downloadedFolders = await FS["downloadFolders"]()
-    writeConfig("folders", downloadedFolders)
-    Object.entries(downloadedFolders)
-      .forEach(([context, folders]) => folders
-        .forEach(folder => watchFolder(<PATHTYPE>context, folder, FS)))
+    FS["downloadFolders"]().then(downloadedFolders => {
+      writeConfig("folders", Object.fromEntries(
+        Object.entries(downloadedFolders).map(
+          ([context, fileObj]) => [context, Object.entries(fileObj).map(([name]) => name)]
+        )))
+      Object.entries(downloadedFolders).forEach(([context, fileObj]) =>
+        Object.entries(fileObj).forEach(([path, promise]) => promise.then(() => watchFolder(<PATHTYPE>context, path, FS)))
+      )
+    })
 
     on("syncFolder", async (_, context, folderName, upload) => {
       (upload ? [addFolderToConfig, watchFolder] : [removeFolderFromConfig, unwatchFolder])

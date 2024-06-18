@@ -6,7 +6,7 @@ import path from "path"
 import { c, x } from "tar"
 import { Readable } from "stream"
 
-import { CloudProvider, PATHMAPPINGS, PATHTYPE, drives } from "../common";
+import { CloudProvider, FILENAMEPROGRESSPAIR, PATHTYPE, drives } from "../common";
 import { APPDATA_PATHS, APP_NAME, CREDENTIALS_PATH, TOKEN_FOLDER } from "../utils/paths";
 import { getLastModDate } from "../utils/mainutils";
 
@@ -51,11 +51,13 @@ export class GDrive extends CloudProvider {
         })
     }
 
-    static override async downloadFolders(): Promise<PATHMAPPINGS> {
-        const folders = await GDrive.getFolders()
-        Object.entries(folders).forEach(([context, files]) => files.forEach(file => GDrive.downloadFolder(<PATHTYPE>context, file)))
-        return <PATHMAPPINGS>Object.fromEntries(
-            Object.entries(folders).map(([context, filearr]) => [context, filearr.map(({ name }) => name.replace(FILE_EXTENSION, ""))]))
+    static override async downloadFolders(): FILENAMEPROGRESSPAIR {
+        return <FILENAMEPROGRESSPAIR>GDrive.getFolders().then(folders =>
+            Object.fromEntries(
+                Object.entries(folders).map(([context, filearr]) =>
+                    [context, Object.fromEntries(filearr.map(
+                        file => [file.name.replace(FILE_EXTENSION, ""), this.downloadFolder(<PATHTYPE>context, file)]
+                    ))])))
     }
 
     private static async downloadFolder(context: PATHTYPE, { id: fileId, modifiedTime, name }: drive_v3.Schema$File) {
@@ -63,12 +65,12 @@ export class GDrive extends CloudProvider {
         const onlineModTime = new Date(modifiedTime)
         const offlineModTime = await getLastModDate(path.join(APPDATA_PATHS[context], nameWithoutFileExt)).catch(() => new Date(1970, 0))
 
-        if (onlineModTime < offlineModTime) this.uploadFolder(context, nameWithoutFileExt, true)
+        if (onlineModTime < offlineModTime) return this.uploadFolder(context, nameWithoutFileExt, true)
         else if (onlineModTime > offlineModTime) {
             console.log("Now downloading ", name)
-            GDrive.gDrive.files.get({ fileId, alt: "media" }, { responseType: "stream" }, (_, { data }) => {
-                data.pipe(x({ cwd: APPDATA_PATHS[context] }))
-            })
+            return GDrive.gDrive.files.get({ fileId, alt: "media" }, { responseType: "stream" }).then(
+                ({ data }) => new Promise(res => data.pipe(x({ cwd: APPDATA_PATHS[context] }).on("end", res)))
+            )
         }
     }
 
@@ -138,6 +140,7 @@ export class GDrive extends CloudProvider {
     private static async createUploadBody(context: PATHTYPE, pathName: string, fileId: string): Promise<drive_v3.Params$Resource$Files$Update>
     private static async createUploadBody(context: PATHTYPE, pathName: string, fileId?: string): Promise<drive_v3.Params$Resource$Files$Create>
     private static async createUploadBody(context: PATHTYPE, pathName: string, fileId?: string) {
+        console.log("Uploading", pathName)
         return getLastModDate(path.join(APPDATA_PATHS[context], pathName))
             .then(date => date.toISOString())
             .then(modifiedTime => ({

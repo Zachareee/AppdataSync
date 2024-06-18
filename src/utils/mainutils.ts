@@ -32,14 +32,19 @@ export async function getLastModDate(absolutePath: string): Promise<Date> {
 }
 
 export async function watchFolder(context: PATHTYPE, folderName: string, FS: typeof CloudProvider) {
-    watchedFiles[context][folderName] = watch(folderName, {
+    return watchedFiles[context][folderName] = watch(folderName, {
         cwd: APPDATA_PATHS[context],
         ignoreInitial: true
     }).on("all", () => FS.uploadFolder(context, folderName, true))
 }
 
 export function unwatchFolder(context: PATHTYPE, folderName: string) {
-    watchedFiles[context][folderName].close()
+    return watchedFiles[context][folderName].close()
+}
+
+export function unwatchAll() {
+    return Promise.all(Object.values(watchedFiles).map(
+        contextGroup => Promise.all(Object.values(contextGroup).map(watcher => watcher.close()))))
 }
 
 export const providerStringPairing: Record<CloudProviderString, typeof CloudProvider> = {
