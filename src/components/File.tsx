@@ -16,7 +16,7 @@ export default function File({ name, clicked, context, updateFunc }:
         })
     }
 
-    return <MidButton onClick={click} clicked={clicked}>
+    return <MidButton onClick={click} clicked={checked}>
         <span>{name}</span>
         <input type="checkbox" className="rounded-full size-8 cursor-pointer" onFocus={(e) => e.target.blur()} checked={checked} readOnly />
     </MidButton>
