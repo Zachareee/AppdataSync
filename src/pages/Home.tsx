@@ -3,7 +3,7 @@ import { useLocation } from "react-router-dom";
 
 import AppdataFolder from "../components/AppdataFolder";
 import LeftPane from "../components/LeftPane";
-import { getSyncedFolders, listAppdataFolders } from "../utils/windowutils";
+import { getSyncedFolders, listAppdataFolders } from "../components/windowutils";
 import { PATHTYPE } from "../common";
 
 export const Context = createContext(null)

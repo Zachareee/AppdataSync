@@ -1,5 +1,5 @@
 import { useState } from "react"
-import { syncFolder } from "../utils/windowutils"
+import { syncFolder } from "./windowutils"
 import { PATHTYPE } from "../common"
 import MidButton from "./MidButton"
 

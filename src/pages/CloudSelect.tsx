@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
-import { abortAuthentication, accountsAuthed, requestProvider, runOnProviderReply } from "../utils/windowutils";
+import { abortAuthentication, accountsAuthed, requestProvider, runOnProviderReply } from "../components/windowutils";
 import { CloudProviderString, drives } from "../common";
 import { homePath } from "./Home";
 import CloudEntry from "../components/CloudEntry";
