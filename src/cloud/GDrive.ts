@@ -38,15 +38,15 @@ export default class GDrive extends CloudProvider {
     // Tests if folder exists, update if it does
     // create if it doesn't
     static override async uploadFolder(context: PATHTYPE, name: string, upload: boolean) {
-        GDrive.gDrive.files.list({
+        return GDrive.gDrive.files.list({
             q: `name = '${name}.gzip' and '${GDrive.folderMapping[context]}' in parents and trashed = false`,
             pageSize: 1,
             fields: "files(id)"
-        }).then(res => res.data.files).then(arr => {
+        }).then(res => res.data.files).then(async arr => {
             if (upload)
-                if (arr.length) this.updateFile(context, name, arr[0].id)
-                else this.createFile(context, name)
-            else this.deleteFile(arr[0].id)
+                if (arr.length) await this.updateFile(context, name, arr[0].id)
+                else await this.createFile(context, name)
+            else await this.deleteFile(arr[0].id)
         })
     }
 

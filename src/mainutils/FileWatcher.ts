@@ -4,7 +4,7 @@ import { PATHTYPE } from "../common";
 import { APPDATA_PATHS } from "./Paths";
 import { CloudProvider } from "../cloud/CloudProvider";
 
-const watchedFiles: Record<PATHTYPE, Record<string, FSWatcher>> = { "LOCAL": {}, "LOCALLOW": {}, "ROAMING": {} }
+const watchedFiles: Record<PATHTYPE, Record<string, FSWatcher>> = { LOCAL: {}, LOCALLOW: {}, ROAMING: {} }
 
 export default class FileWatcher {
     static async watchFolder(context: PATHTYPE, folderName: string, FS: typeof CloudProvider) {

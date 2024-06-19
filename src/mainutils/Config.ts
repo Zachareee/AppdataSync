@@ -19,7 +19,7 @@ export default class Config {
 
     static async removeFolderFromConfig(context: PATHTYPE, folderName: string) {
         return Config.readConfig().then(config =>
-            write("folders", { [context]: config.folders[context].filter(folder => folder !== folderName) }, { ...config }))
+            write("folders", { ...(config.folders || {}), [context]: config.folders[context].filter(folder => folder !== folderName) }, { ...config }))
     }
 }
 

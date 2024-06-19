@@ -7,6 +7,7 @@ import Config from './mainutils/Config';
 import FileWatcher from './mainutils/FileWatcher';
 import { APPPATHS } from './mainutils/Paths';
 import { providerStringPairing } from './mainutils/ProviderPairing';
+import Jobs from './mainutils/Jobs';
 
 // Handle creating/removing shortcuts on Windows when installing/uninstalling.
 if (require('electron-squirrel-startup')) {
@@ -95,8 +96,11 @@ app.on('activate', () => {
   }
 });
 
-app.on("quit", async () => {
+app.on("before-quit", async e => {
+  e.preventDefault()
+  await Jobs.abort()
   await FileWatcher.unwatchAll()
+  app.exit()
 })
 
 // In this file you can include the rest of your app's specific main process
@@ -145,6 +149,7 @@ async function registerProvider(webContents: WebContents, provider: CloudProvide
     ipcMain.removeAllListeners("syncFolder").removeHandler("getSyncedFolders")
     await FileWatcher.unwatchAll()
 
+    Jobs.init(FS)
     handle("getSyncedFolders", async () => await Config.readConfig().then(config => config.folders))
 
     FS["downloadFolders"]().then(downloadedFolders => {
@@ -160,7 +165,7 @@ async function registerProvider(webContents: WebContents, provider: CloudProvide
     on("syncFolder", async (_, context, folderName, upload) => {
       (upload ? [Config.addFolderToConfig, FileWatcher.watchFolder] : [Config.removeFolderFromConfig, FileWatcher.unwatchFolder])
         .forEach(func => func(context, folderName, FS))
-      FS["uploadFolder"](context, folderName, upload)
+      Jobs.add(context, folderName, upload)
     })
   }).then(() => send(webContents, "runOnProviderReply", provider))
     .catch(console.warn)
