@@ -6,7 +6,7 @@ import path from "path"
 
 import { PATHTYPE, drives } from "../common";
 import { CloudProvider, FILENAMEPROGRESSPAIR } from "./CloudProvider";
-import { APPDATA_PATHS, APPPATHS } from "../mainutils/Paths";
+import { APPDATA_PATHS, APPPATHS, PATHMAPPING } from "../mainutils/Paths";
 import Archive from "../mainutils/Archive";
 
 const GDRIVE_CREDENTIALS = path.join(APPPATHS.CREDENTIALS_PATH, 'GAPI.json');
@@ -16,7 +16,7 @@ const FILE_EXTENSION = /.gzip$/
 export default class GDrive extends CloudProvider {
     private static gDrive: drive_v3.Drive
     private static authClient: OAuth2Client
-    private static folderMapping: Record<PATHTYPE, string>
+    private static folderMapping: PATHMAPPING
 
     static override async init() {
         GDrive.authClient = await authorize()

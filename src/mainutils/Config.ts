@@ -1,6 +1,6 @@
 import { promises as fs } from "fs"
 
-import { CloudProviderString, PATHMAPPINGS, PATHTYPE } from "../common"
+import { CloudProviderString, DIRECTORYTREE, PATHTYPE } from "../common"
 import { APPPATHS } from "./Paths"
 
 export default class Config {
@@ -29,5 +29,5 @@ function write<T extends keyof ConfigInterface>(key: T, value: ConfigInterface[T
 
 interface ConfigInterface {
     provider: CloudProviderString,
-    folders: Partial<PATHMAPPINGS>
+    folders: Partial<DIRECTORYTREE>
 }

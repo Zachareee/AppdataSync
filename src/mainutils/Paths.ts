@@ -19,3 +19,5 @@ export const APPDATA_PATHS: Record<PATHTYPE, string> = {
     LOCAL,
     LOCALLOW: LOCAL + "Low"
 }
+
+export type PATHMAPPING = typeof APPDATA_PATHS

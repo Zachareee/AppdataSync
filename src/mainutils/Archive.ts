@@ -12,7 +12,7 @@ export default class Archive {
     // https://stackoverflow.com/a/45826189
     static async getLastModDate(absolutePath: string): Promise<Date> {
         const stat = await fs.stat(absolutePath)
-        if (stat.isFile()) return Promise.resolve(stat.mtime)
+        if (stat.isFile()) return stat.mtime
         return new Promise((resolve, reject) => {
             glob(path.join(absolutePath, '**/*'), (err, files) => {
                 if (err) {
@@ -20,11 +20,11 @@ export default class Archive {
                 }
 
                 return resolve(
-                    Promise.all(
-                        files.map(file => fs.stat(file))
-                    ).then(files => files.reduce(
-                        (stat1, stat2) => stat1.mtime > stat2.mtime ? stat1 : stat2, { mtime: new Date(1970, 0) }
-                    )).then(({ mtime }) => mtime)
+                    Promise.all(files.map(file => fs.stat(file)))
+                        .then(files => files.map(({ mtime }) => mtime))
+                        .then(files => files.reduce(
+                            (stat1, stat2) => stat1 > stat2 ? stat1 : stat2, new Date(1970, 0)
+                        ))
                 )
             })
         })

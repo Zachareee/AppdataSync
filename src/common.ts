@@ -4,16 +4,16 @@ const PATHTYPE_KEYS = ["LOCAL", "LOCALLOW", "ROAMING"] as const
 
 export { PATHTYPE_KEYS as PATHTYPE }
 export type PATHTYPE = typeof PATHTYPE_KEYS[number]
-export type PATHMAPPINGS = Record<PATHTYPE, string[]>
+export type DIRECTORYTREE = Record<PATHTYPE, string[]>
 
 export interface RendToMainCalls {
-    listAppdataFolders(): Promise<Partial<PATHMAPPINGS>>
+    listAppdataFolders(): Promise<Partial<DIRECTORYTREE>>
     requestProvider(provider: CloudProviderString): void
     abortAuthentication(): void
     logout(provider: CloudProviderString): void
     accountsAuthed(): Promise<CloudProviderString[]>
     syncFolder(context: PATHTYPE, folderName: string, upload: boolean): void
-    getSyncedFolders(): Promise<Partial<PATHMAPPINGS>>
+    getSyncedFolders(): Promise<Partial<DIRECTORYTREE>>
 }
 
 export interface MainToRendCalls {
