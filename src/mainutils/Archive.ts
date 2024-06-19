@@ -1,7 +1,7 @@
 import { promises as fs } from "fs";
 import glob from "glob"
 import path from "path"
-import { Readable } from "stream"
+import { Readable, PassThrough } from "stream"
 import { c, x } from "tar";
 
 import { APPDATA_PATHS } from "./Paths";
@@ -30,12 +30,12 @@ export default class Archive {
         })
     }
 
-    static createArchive(cwd: PATHTYPE, folderName: string): Readable {
-        return Readable.from(<Buffer>c({
+    static createArchive(cwd: PATHTYPE, folderName: string, sync = false): Readable {
+        return c({
             gzip: true,
-            sync: true,
+            sync,
             cwd: APPDATA_PATHS[cwd]
-        }, [folderName]).read())
+        }, [folderName]).pipe(new PassThrough())
     }
 
     static async extractArchive(cwd: PATHTYPE, data: Readable) {

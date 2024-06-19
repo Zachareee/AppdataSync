@@ -13,7 +13,7 @@ const GDRIVE_CREDENTIALS = path.join(APPPATHS.CREDENTIALS_PATH, 'GAPI.json');
 const TOKEN_PATH = `${APPPATHS.TOKEN_FOLDER}/${drives["googleDrive"].tokenFile}`
 const FILE_EXTENSION = /.gzip$/
 
-export class GDrive extends CloudProvider {
+export default class GDrive extends CloudProvider {
     private static gDrive: drive_v3.Drive
     private static authClient: OAuth2Client
     private static folderMapping: Record<PATHTYPE, string>

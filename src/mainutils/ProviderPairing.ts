@@ -1,5 +1,6 @@
-import { GDrive } from "../cloud/GDrive";
-import { CloudProvider, CloudProviderString } from "../common";
+import { CloudProvider } from "../cloud/CloudProvider";
+import GDrive from "../cloud/GDrive";
+import { CloudProviderString } from "../common";
 
 export const providerStringPairing: Record<CloudProviderString, typeof CloudProvider> = {
     googleDrive: GDrive
