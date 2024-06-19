@@ -3,15 +3,14 @@ import { drive, drive_v3 } from "@googleapis/drive";
 import { authenticate } from "@google-cloud/local-auth";
 import { OAuth2Client, auth } from "google-auth-library"
 import path from "path"
-import { c, x } from "tar"
-import { Readable } from "stream"
 
-import { CloudProvider, FILENAMEPROGRESSPAIR, PATHTYPE, drives } from "../common";
-import { APPDATA_PATHS, APP_NAME, CREDENTIALS_PATH, TOKEN_FOLDER } from "../utils/paths";
-import { getLastModDate } from "../utils/mainutils";
+import { PATHTYPE, drives } from "../common";
+import { CloudProvider, FILENAMEPROGRESSPAIR } from "./CloudProvider";
+import { APPDATA_PATHS, APPPATHS } from "../mainutils/Paths";
+import Archive from "../mainutils/Archive";
 
-const GDRIVE_CREDENTIALS = path.join(CREDENTIALS_PATH, 'GAPI.json');
-const TOKEN_PATH = `${TOKEN_FOLDER}/${drives["googleDrive"].tokenFile}`
+const GDRIVE_CREDENTIALS = path.join(APPPATHS.CREDENTIALS_PATH, 'GAPI.json');
+const TOKEN_PATH = `${APPPATHS.TOKEN_FOLDER}/${drives["googleDrive"].tokenFile}`
 const FILE_EXTENSION = /.gzip$/
 
 export class GDrive extends CloudProvider {
@@ -63,13 +62,13 @@ export class GDrive extends CloudProvider {
     private static async downloadFolder(context: PATHTYPE, { id: fileId, modifiedTime, name }: drive_v3.Schema$File) {
         const nameWithoutFileExt = name.replace(FILE_EXTENSION, "")
         const onlineModTime = new Date(modifiedTime)
-        const offlineModTime = await getLastModDate(path.join(APPDATA_PATHS[context], nameWithoutFileExt)).catch(() => new Date(1970, 0))
+        const offlineModTime = await Archive.getLastModDate(path.join(APPDATA_PATHS[context], nameWithoutFileExt)).catch(() => new Date(1970, 0))
 
         if (onlineModTime < offlineModTime) return this.uploadFolder(context, nameWithoutFileExt, true)
         else if (onlineModTime > offlineModTime) {
             console.log("Now downloading ", name)
             return GDrive.gDrive.files.get({ fileId, alt: "media" }, { responseType: "stream" }).then(
-                ({ data }) => new Promise(res => data.pipe(x({ cwd: APPDATA_PATHS[context] }).on("end", res)))
+                ({ data }) => Archive.extractArchive(context, data)
             )
         }
     }
@@ -93,7 +92,7 @@ export class GDrive extends CloudProvider {
 
     private static async checkHomeFolder(): Promise<Record<PATHTYPE, string>> {
         return GDrive.gDrive.files.list({
-            q: `name = '${APP_NAME}' and mimeType = '${FILETYPE.FOLDER}' and trashed = false`,
+            q: `name = '${APPPATHS.APP_NAME}' and mimeType = '${FILETYPE.FOLDER}' and trashed = false`,
             pageSize: 1,
             fields: "files(id)"
         }).then(async ({ data: { files: [{ id }] } }) =>
@@ -110,7 +109,7 @@ export class GDrive extends CloudProvider {
     private static async createHomeFolder(): Promise<Record<PATHTYPE, string>> {
         return GDrive.gDrive.files.create({
             requestBody: {
-                name: APP_NAME,
+                name: APPPATHS.APP_NAME,
                 description: "Your synced appdata is stored here! Source: AppdataSync https://github.com/Zachareee/AppdataSync",
                 mimeType: FILETYPE.FOLDER
             }, fields: "id"
@@ -141,7 +140,7 @@ export class GDrive extends CloudProvider {
     private static async createUploadBody(context: PATHTYPE, pathName: string, fileId?: string): Promise<drive_v3.Params$Resource$Files$Create>
     private static async createUploadBody(context: PATHTYPE, pathName: string, fileId?: string) {
         console.log("Uploading", pathName)
-        return getLastModDate(path.join(APPDATA_PATHS[context], pathName))
+        return Archive.getLastModDate(path.join(APPDATA_PATHS[context], pathName))
             .then(date => date.toISOString())
             .then(modifiedTime => ({
                 requestBody: {
@@ -150,11 +149,7 @@ export class GDrive extends CloudProvider {
                     modifiedTime
                 },
                 media: {
-                    body: Readable.from(<Buffer>c({
-                        gzip: true,
-                        sync: true,
-                        cwd: APPDATA_PATHS[context]
-                    }, [pathName]).read()),
+                    body: Archive.createArchive(context, pathName),
                 },
                 uploadType: "multipart",
                 fileId

@@ -3,8 +3,10 @@ import path from 'path';
 import { promises as fs } from "fs"
 
 import { CloudProviderString, drives, RtMSignals, MtRSignals, PATHTYPE, RendToMainCalls, MainToRendCalls } from './common';
-import { addFolderToConfig, providerStringPairing, readConfig, removeFolderFromConfig, unwatchAll, unwatchFolder, watchFolder, writeConfig } from './utils/mainutils';
-import { TOKEN_FOLDER } from './utils/paths';
+import Config from './mainutils/Config';
+import FileWatcher from './mainutils/FileWatcher';
+import { APPPATHS } from './mainutils/Paths';
+import { providerStringPairing } from './mainutils/ProviderPairing';
 
 // Handle creating/removing shortcuts on Windows when installing/uninstalling.
 if (require('electron-squirrel-startup')) {
@@ -57,7 +59,7 @@ const createWindow = () => {
   }
 
   mainWindow.webContents.once("did-finish-load", () => {
-    readConfig().then(({ provider }) => registerProvider(mainWindow.webContents, provider))
+    Config.readConfig().then(({ provider }) => registerProvider(mainWindow.webContents, provider))
     mainWindow.show()
   })
 
@@ -94,14 +96,14 @@ app.on('activate', () => {
 });
 
 app.on("quit", async () => {
-  await unwatchAll()
+  await FileWatcher.unwatchAll()
 })
 
 // In this file you can include the rest of your app's specific main process
 // code. You can also put them in separate files and import them here.
 
 // Create AppdataSync folder
-fs.mkdir(TOKEN_FOLDER, { recursive: true })
+fs.mkdir(APPPATHS.TOKEN_FOLDER, { recursive: true })
 
 // Read Appdata folders
 const appdatapath = path.join(app.getPath("appData"), "..")
@@ -113,7 +115,7 @@ handle("listAppdataFolders", async () =>
 
 // Registers cloud methods
 on("requestProvider", async (event, provider) => {
-  writeConfig("provider", provider)
+  Config.writeConfig("provider", provider)
   return registerProvider(event.sender, provider)
 })
 
@@ -122,7 +124,7 @@ handle("accountsAuthed", async () => {
   await Promise.all(Object.entries(drives).map(
     async ([provider, { tokenFile }]) => {
       try {
-        await fs.access(`${TOKEN_FOLDER}/${tokenFile}`)
+        await fs.access(`${APPPATHS.TOKEN_FOLDER}/${tokenFile}`)
         providers.push(<CloudProviderString>provider)
       } catch { return }
     }
@@ -132,8 +134,8 @@ handle("accountsAuthed", async () => {
 })
 
 on("abortAuthentication", async () => {
-  readConfig().then(({ provider }) => providerStringPairing[provider].abortAuth())
-  writeConfig("provider", null)
+  Config.readConfig().then(({ provider }) => providerStringPairing[provider].abortAuth())
+  Config.writeConfig("provider", null)
 })
 
 on("logout", async (_, provider) => providerStringPairing[provider].logout())
@@ -141,22 +143,22 @@ on("logout", async (_, provider) => providerStringPairing[provider].logout())
 async function registerProvider(webContents: WebContents, provider: CloudProviderString) {
   return providerStringPairing[provider]?.init().then(async FS => {
     ipcMain.removeAllListeners("syncFolder").removeHandler("getSyncedFolders")
-    await unwatchAll()
+    await FileWatcher.unwatchAll()
 
-    handle("getSyncedFolders", async () => await readConfig().then(config => config.folders))
+    handle("getSyncedFolders", async () => await Config.readConfig().then(config => config.folders))
 
     FS["downloadFolders"]().then(downloadedFolders => {
-      writeConfig("folders", Object.fromEntries(
+      Config.writeConfig("folders", Object.fromEntries(
         Object.entries(downloadedFolders).map(
           ([context, fileObj]) => [context, Object.entries(fileObj).map(([name]) => name)]
         )))
       Object.entries(downloadedFolders).forEach(([context, fileObj]) =>
-        Object.entries(fileObj).forEach(([path, promise]) => promise.then(() => watchFolder(<PATHTYPE>context, path, FS)))
+        Object.entries(fileObj).forEach(([path, promise]) => promise.then(() => FileWatcher.watchFolder(<PATHTYPE>context, path, FS)))
       )
     })
 
     on("syncFolder", async (_, context, folderName, upload) => {
-      (upload ? [addFolderToConfig, watchFolder] : [removeFolderFromConfig, unwatchFolder])
+      (upload ? [Config.addFolderToConfig, FileWatcher.watchFolder] : [Config.removeFolderFromConfig, FileWatcher.unwatchFolder])
         .forEach(func => func(context, folderName, FS))
       FS["uploadFolder"](context, folderName, upload)
     })

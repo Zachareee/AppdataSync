@@ -1,20 +1,10 @@
 import GoogleDriveIcon from "./img/GoogleDriveIcon.svg"
 
 const PATHTYPE_KEYS = ["LOCAL", "LOCALLOW", "ROAMING"] as const
+
 export { PATHTYPE_KEYS as PATHTYPE }
 export type PATHTYPE = typeof PATHTYPE_KEYS[number]
 export type PATHMAPPINGS = Record<PATHTYPE, string[]>
-export type FILENAMEPROGRESSPAIR = Promise<Record<PATHTYPE, Record<string, Promise<unknown>>>>
-
-// cannot be in mainutils due to conflicts with init of GDrive
-export class CloudProvider {
-    static async init(): Promise<typeof CloudProvider> { return notImplemented() }
-    static async abortAuth(): Promise<void> { return notImplemented() }
-    static async logout(): Promise<void> { return notImplemented() }
-    static async uploadFolder(context: PATHTYPE, folderName: string, upload: boolean):
-        Promise<void> { return notImplemented(context, folderName, upload) }
-    static async downloadFolders(): FILENAMEPROGRESSPAIR { return notImplemented() }
-}
 
 export interface RendToMainCalls {
     listAppdataFolders(): Promise<Partial<PATHMAPPINGS>>
@@ -47,9 +37,4 @@ export const drives: Record<| "googleDrive", ProviderContents> = {
         icon: GoogleDriveIcon,
         tokenFile: "googleDriveAuth.json"
     }
-}
-
-async function notImplemented(...args: unknown[]): Promise<never> {
-    args
-    throw new Error("Not implemented")
 }
