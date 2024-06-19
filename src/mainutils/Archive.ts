@@ -30,7 +30,7 @@ export default class Archive {
         })
     }
 
-    static async createArchive(cwd: PATHTYPE, folderName: string, sync = true): Promise<Readable> {
+    static createArchive(cwd: PATHTYPE, folderName: string): Readable {
         return Readable.from(<Buffer>c({
             gzip: true,
             sync: true,

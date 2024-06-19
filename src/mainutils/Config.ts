@@ -8,23 +8,23 @@ export default class Config {
         return fs.readFile(APPPATHS.CONFIG_PATH, "ascii").then(data => JSON.parse(data)).catch(() => ({}))
     }
 
-    static writeConfig<T extends keyof ConfigInterface>(key: T, value: ConfigInterface[T]) {
-        this.readConfig().then(data => write(key, value, data)).catch(() => write(key, value))
+    static async writeConfig<T extends keyof ConfigInterface>(key: T, value: ConfigInterface[T]) {
+        return Config.readConfig().then(data => write(key, value, data)).catch(() => write(key, value))
     }
 
-    static addFolderToConfig(context: PATHTYPE, folderName: string) {
-        this.readConfig().then(config =>
+    static async addFolderToConfig(context: PATHTYPE, folderName: string) {
+        return Config.readConfig().then(config =>
             write("folders", { ...(config.folders || {}), [context]: [...config.folders[context], folderName] }, { ...config }))
     }
 
-    static removeFolderFromConfig(context: PATHTYPE, folderName: string) {
-        this.readConfig().then(config =>
+    static async removeFolderFromConfig(context: PATHTYPE, folderName: string) {
+        return Config.readConfig().then(config =>
             write("folders", { [context]: config.folders[context].filter(folder => folder !== folderName) }, { ...config }))
     }
 }
 
 function write<T extends keyof ConfigInterface>(key: T, value: ConfigInterface[T], data = {}) {
-    fs.writeFile(APPPATHS.CONFIG_PATH, JSON.stringify({ ...data, [key]: value }))
+    return fs.writeFile(APPPATHS.CONFIG_PATH, JSON.stringify({ ...data, [key]: value }))
 }
 
 interface ConfigInterface {
