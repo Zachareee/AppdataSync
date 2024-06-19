@@ -2,6 +2,7 @@ import { Readable } from "stream"
 
 import { CloudProvider } from "../cloud/CloudProvider";
 import { PATHTYPE } from "../common";
+import { promisifyObjectValues } from "./Utils";
 
 const jobs: Record<PATHTYPE, Record<string, Runner>> = { LOCAL: {}, LOCALLOW: {}, ROAMING: {} }
 
@@ -17,9 +18,9 @@ export default class Jobs {
             .push([context, folderName, upload])
     }
 
-    static async abort() {
-        return await Promise.all(Object.values(jobs).map(
-            obj => Promise.all(Object.values(obj).map(entry => entry.abort()))))
+    static abort() {
+        return promisifyObjectValues(jobs,
+            obj => promisifyObjectValues(obj, entry => entry.abort()))
     }
 }
 

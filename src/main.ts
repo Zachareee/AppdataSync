@@ -6,7 +6,7 @@ import { CloudProviderString, drives, RtMSignals, MtRSignals, PATHTYPE, RendToMa
 import Config from './mainutils/Config';
 import FileWatcher from './mainutils/FileWatcher';
 import { APPPATHS } from './mainutils/Paths';
-import { providerStringPairing } from './mainutils/ProviderPairing';
+import { providerStringPairing } from './mainutils/Utils';
 import Jobs from './mainutils/Jobs';
 
 // Handle creating/removing shortcuts on Windows when installing/uninstalling.
