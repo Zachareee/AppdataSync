@@ -2,6 +2,14 @@ import GoogleDriveIcon from "./img/GoogleDriveIcon.svg"
 
 const PATHTYPE_KEYS = ["LOCAL", "LOCALLOW", "ROAMING"] as const
 
+export const drives: Record<| "googleDrive", ProviderContents> = {
+    googleDrive: {
+        driveName: "Google Drive",
+        icon: GoogleDriveIcon,
+        tokenFile: "googleDriveAuth.json"
+    }
+}
+
 export { PATHTYPE_KEYS as PATHTYPE }
 export type PATHTYPE = typeof PATHTYPE_KEYS[number]
 export type DIRECTORYTREE = Record<PATHTYPE, string[]>
@@ -31,11 +39,3 @@ export type ProviderContents = {
 }
 
 export type CloudProviderString = keyof typeof drives
-
-export const drives: Record<| "googleDrive", ProviderContents> = {
-    googleDrive: {
-        driveName: "Google Drive",
-        icon: GoogleDriveIcon,
-        tokenFile: "googleDriveAuth.json"
-    }
-}
