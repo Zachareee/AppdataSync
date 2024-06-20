@@ -1,30 +1,19 @@
 import File from "./File"
-import { PATHTYPE } from "../common"
-import MidButton from "./MidButton"
-import { useContext } from "react"
-import { Context, Folder } from "../pages/Home"
+import { Folder } from "../pages/Home"
 
-export default function Folders({ context }: { context: PATHTYPE }) {
-    const { setShowFolder, appdataFolders, setAppdataFolders }: {
-        setShowFolder(context: PATHTYPE): void,
-        appdataFolders: Partial<Record<PATHTYPE, Folder>>,
-        setAppdataFolders(folders: typeof appdataFolders | ((folders: typeof appdataFolders) => typeof appdataFolders)): void
-    } = useContext(Context)
+export default function Folders({ syncFunc, contents, updateFunc }: {
+    contents: Folder,
+    syncFunc(name: string, bool: boolean): void,
+    updateFunc(folder: Folder): void
+}) {
 
     function updateFolder(key: number, checked: boolean) {
-        appdataFolders[context][key].checked = checked
-        setAppdataFolders(appdataFolders)
+        contents[key].checked = checked
+        updateFunc(contents)
     }
 
     return (
-        <div className="no-drag overflow-auto">
-            {context
-                ? appdataFolders[context].map(({ name, checked }, key) =>
-                    <File key={key} name={name} clicked={checked} context={context} updateFunc={checked => { updateFolder(key, checked) }} />)
-                : PATHTYPE.map((path, key) => <MidButton onClick={() => setShowFolder(path)} key={key}>
-                    {path}
-                </MidButton>)
-            }
-        </div>
+        contents.map(({ name, checked }, key) =>
+            <File key={key} name={name} clicked={checked} syncFunc={syncFunc} updateFunc={checked => { updateFolder(key, checked) }} />)
     )
 }

@@ -1,17 +1,15 @@
 import { useState } from "react"
-import { syncFolder } from "./windowutils"
-import { PATHTYPE } from "../common"
 import MidButton from "./MidButton"
 
-export default function File({ name, clicked, context, updateFunc }:
-    { name: string, clicked: boolean, context: PATHTYPE, updateFunc(checked: boolean): void }) {
+export default function File({ name, clicked, syncFunc, updateFunc }:
+    { name: string, clicked: boolean, syncFunc(name: string, bool: boolean): void, updateFunc(checked: boolean): void }) {
     const [checked, setChecked] = useState(clicked)
 
     function click() {
         setChecked(bool => {
             bool = !bool
             updateFunc(bool)
-            syncFolder(context, name, bool)
+            syncFunc(name, bool)
             return bool
         })
     }
