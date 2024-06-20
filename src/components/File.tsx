@@ -1,14 +1,14 @@
 import { useState } from "react"
 import MidButton from "./MidButton"
 
-export default function File({ name, clicked, syncFunc, updateFunc }:
-    { name: string, clicked: boolean, syncFunc(name: string, bool: boolean): void, updateFunc(checked: boolean): void }) {
+export default function File({ name, clicked, syncFunc }: {
+    name: string, clicked: boolean, syncFunc(name: string, bool: boolean): void
+}) {
     const [checked, setChecked] = useState(clicked)
 
     function click() {
         setChecked(bool => {
             bool = !bool
-            updateFunc(bool)
             syncFunc(name, bool)
             return bool
         })

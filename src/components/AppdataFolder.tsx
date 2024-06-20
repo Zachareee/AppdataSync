@@ -6,7 +6,9 @@ import { Folder } from "../pages/Home";
 import { getSyncedFolders, listAppdataFolders, runOnFolderChange, syncFolder } from "./windowutils";
 import FolderSelector from "./FolderSelector";
 
-export default function AppdataFolder({ provider, showFolder }: { provider: CloudProviderString, showFolder: PATHTYPE }) {
+export default function AppdataFolder({ provider, showFolder }: {
+    provider: CloudProviderString, showFolder: PATHTYPE
+}) {
     const [appdataFolders, setAppdataFolders] = useState<AppdataStructure>({})
     if (!Object.keys(appdataFolders).length) listAppdataFolders()
 
@@ -16,10 +18,6 @@ export default function AppdataFolder({ provider, showFolder }: { provider: Clou
                 ({ ...folders, [context]: files.map(name => ({ name, checked: results[context as PATHTYPE]?.includes(name) ?? false })) as Folder }))
         )
     })
-
-    function updateFolder(context: PATHTYPE, folder: Folder) {
-        setAppdataFolders(appdata => ({ ...appdata, [context]: folder }))
-    }
 
     function syncFunc(name: string, bool: boolean) {
         return syncFolder(showFolder, name, bool)
@@ -31,7 +29,7 @@ export default function AppdataFolder({ provider, showFolder }: { provider: Clou
             {showFolder && <span className="text-slate-300">Now in {showFolder}</span>}
             <div className="no-drag overflow-auto">
                 {showFolder
-                    ? <Folders syncFunc={syncFunc} contents={appdataFolders[showFolder]} updateFunc={folder => updateFolder(showFolder, folder)} />
+                    ? <Folders syncFunc={syncFunc} contents={appdataFolders[showFolder]} />
                     : <FolderSelector />}
             </div>
         </div>
