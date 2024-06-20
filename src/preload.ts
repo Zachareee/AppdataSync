@@ -4,7 +4,7 @@ import { contextBridge, ipcRenderer, IpcRenderer } from "electron"
 import { RendToMainCalls, RtMSignals, MainToRendCalls, MtRSignals } from "./common"
 
 const rtm: RendToMainCalls = {
-    listAppdataFolders: () => invoke("listAppdataFolders"),
+    listAppdataFolders: () => send("listAppdataFolders"),
     requestProvider: provider => send("requestProvider", provider),
     abortAuthentication: () => send("abortAuthentication"),
     logout: provider => send("logout", provider),
@@ -15,8 +15,13 @@ const rtm: RendToMainCalls = {
 
 const mtr: MainToRendCalls = {
     runOnProviderReply(callback) {
-        on("runOnProviderReply", (_, provider) =>
-            callback(provider)
+        on("runOnProviderReply", (_, ...args) =>
+            callback(...args)
+        )
+    },
+    runOnFolderChange(callback) {
+        on("runOnFolderChange", (_, ...args) =>
+            callback(...args)
         )
     },
 }

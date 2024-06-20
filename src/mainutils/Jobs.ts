@@ -3,10 +3,11 @@ import { Readable } from "stream"
 import { CloudProvider } from "../cloud/CloudProvider";
 import { PATHTYPE } from "../common";
 import { promisifyObjectValues } from "./Utils";
+import { Abortable } from "./Abortable";
 
 const jobs: Record<PATHTYPE, Record<string, Runner>> = { LOCAL: {}, LOCALLOW: {}, ROAMING: {} }
 
-export default class Jobs {
+export default class Jobs extends Abortable {
     static FS: typeof CloudProvider
 
     static init(FS: typeof CloudProvider) {
@@ -18,7 +19,7 @@ export default class Jobs {
             .push([context, folderName, upload])
     }
 
-    static abort() {
+    static override abort() {
         return promisifyObjectValues(jobs,
             obj => promisifyObjectValues(obj, entry => entry.abort()))
     }

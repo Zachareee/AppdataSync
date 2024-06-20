@@ -38,7 +38,10 @@ export default class Archive {
         }, [folderName]).pipe(new PassThrough())
     }
 
-    static async extractArchive(cwd: PATHTYPE, data: Readable) {
-        return new Promise(res => data.pipe(x({ cwd: APPDATA_PATHS[cwd] }).on("end", res)))
+    static async extractArchive(cwd: PATHTYPE, data: Readable, sync = false) {
+        return new Promise(res => data.pipe(x({
+            cwd: APPDATA_PATHS[cwd],
+            sync,
+        }).on("end", res)))
     }
 }

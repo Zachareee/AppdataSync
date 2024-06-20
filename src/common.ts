@@ -7,7 +7,7 @@ export type PATHTYPE = typeof PATHTYPE_KEYS[number]
 export type DIRECTORYTREE = Record<PATHTYPE, string[]>
 
 export interface RendToMainCalls {
-    listAppdataFolders(): Promise<Partial<DIRECTORYTREE>>
+    listAppdataFolders(): void
     requestProvider(provider: CloudProviderString): void
     abortAuthentication(): void
     logout(provider: CloudProviderString): void
@@ -18,6 +18,7 @@ export interface RendToMainCalls {
 
 export interface MainToRendCalls {
     runOnProviderReply(callback: (provider: CloudProviderString) => void): void
+    runOnFolderChange(callback: (context: PATHTYPE, files: DIRECTORYTREE[PATHTYPE]) => void): void
 }
 
 export type RtMSignals = keyof RendToMainCalls

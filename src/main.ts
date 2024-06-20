@@ -5,7 +5,7 @@ import { promises as fs } from "fs"
 import { CloudProviderString, drives, RtMSignals, MtRSignals, PATHTYPE, RendToMainCalls, MainToRendCalls } from './common';
 import Config from './mainutils/Config';
 import FileWatcher from './mainutils/FileWatcher';
-import { APPPATHS } from './mainutils/Paths';
+import { APPDATA_PATHS, APPPATHS } from './mainutils/Paths';
 import { providerStringPairing } from './mainutils/Utils';
 import Jobs from './mainutils/Jobs';
 
@@ -98,8 +98,7 @@ app.on('activate', () => {
 
 app.on("before-quit", async e => {
   e.preventDefault()
-  await Jobs.abort()
-  await FileWatcher.unwatchAll()
+  await Promise.all([Jobs, FileWatcher].map(abortable => abortable.abort()))
   app.exit()
 })
 
@@ -110,12 +109,14 @@ app.on("before-quit", async e => {
 fs.mkdir(APPPATHS.TOKEN_FOLDER, { recursive: true })
 
 // Read Appdata folders
-const appdatapath = path.join(app.getPath("appData"), "..")
-handle("listAppdataFolders", async () =>
-  Object.fromEntries(await Promise.all(await fs.readdir(appdatapath)
-    .then(roots => roots.map(async folder => <[PATHTYPE, string[]]>
-      [folder.toUpperCase(), await fs.readdir(path.join(appdatapath, folder))]))))
-)
+on("listAppdataFolders", async event => {
+  Object.entries(APPDATA_PATHS).forEach(async ([folder, folderpath]) =>
+    send(event.sender, "runOnFolderChange", <PATHTYPE>folder, await fs.readdir(folderpath))
+  )
+  FileWatcher.watchAppdataRoots(async context => 
+    send(event.sender, "runOnFolderChange", context, await fs.readdir(APPDATA_PATHS[context]))
+  )
+})
 
 // Registers cloud methods
 on("requestProvider", async (event, provider) => {
