@@ -6,6 +6,6 @@ export const providerStringPairing: Record<CloudProviderString, typeof CloudProv
     googleDrive: GDrive
 }
 
-export function promisifyObjectValues<U extends string, V, R>(object: Record<U, V>, func: (param: V) => R) {
-    return Promise.all(Object.values<V>(object).map(func))
+export function promisifyObjectValues<V, R>(object: Record<never, V>, func: (param: V) => R) {
+    return Promise.all(Object.values(object).map(func))
 }

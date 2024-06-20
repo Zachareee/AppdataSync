@@ -91,7 +91,7 @@ export default class GDrive extends CloudProvider {
     }
 
     private static async checkHomeFolder(): Promise<Record<PATHTYPE, string>> {
-        return GDrive.gDrive.files.list({
+        return <Promise<Record<PATHTYPE, string>>>GDrive.gDrive.files.list({
             q: `name = '${APPPATHS.APP_NAME}' and mimeType = '${FILETYPE.FOLDER}' and trashed = false`,
             pageSize: 1,
             fields: "files(id)"
@@ -100,14 +100,14 @@ export default class GDrive extends CloudProvider {
                 GDrive.gDrive.files.list({
                     q: `name = '${path}' and mimeType = '${FILETYPE.FOLDER}' and trashed = false and '${id}' in parents`,
                     pageSize: 1,
-                    fields: "files(name, id)"
-                }).then(({ data: { files: [{ name, id }] } }) => [name, id])
+                    fields: "files(id)"
+                }).then(({ data: { files: [{ id }] } }) => <[PATHTYPE, string]>[path, id])
             )))
         )
     }
 
     private static async createHomeFolder(): Promise<Record<PATHTYPE, string>> {
-        return GDrive.gDrive.files.create({
+        return <Promise<Record<PATHTYPE, string>>>GDrive.gDrive.files.create({
             requestBody: {
                 name: APPPATHS.APP_NAME,
                 description: "Your synced appdata is stored here! Source: AppdataSync https://github.com/Zachareee/AppdataSync",
@@ -119,8 +119,8 @@ export default class GDrive extends CloudProvider {
                     name,
                     parents: [parentID],
                     mimeType: FILETYPE.FOLDER
-                }, fields: "id, name"
-            }).then(({ data: { name, id } }) => [name, id]))))
+                }, fields: "id"
+            }).then(({ data: { id } }) => <[PATHTYPE, string]>[name, id]))))
         )
     }
 

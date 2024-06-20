@@ -113,8 +113,8 @@ fs.mkdir(APPPATHS.TOKEN_FOLDER, { recursive: true })
 const appdatapath = path.join(app.getPath("appData"), "..")
 handle("listAppdataFolders", async () =>
   Object.fromEntries(await Promise.all(await fs.readdir(appdatapath)
-    .then(roots => roots.map(folder =>
-      fs.readdir(path.join(appdatapath, folder)).then(files => [folder.toUpperCase(), files])))))
+    .then(roots => roots.map(async folder => <[PATHTYPE, string[]]>
+      [folder.toUpperCase(), await fs.readdir(path.join(appdatapath, folder))]))))
 )
 
 // Registers cloud methods
@@ -154,12 +154,12 @@ async function registerProvider(webContents: WebContents, provider: CloudProvide
 
     FS["downloadFolders"]().then(downloadedFolders => {
       Config.writeConfig("folders", Object.fromEntries(
-        Object.entries(downloadedFolders).map(
-          ([context, fileObj]) => [context, Object.entries(fileObj).map(([name]) => name)]
+        Object.entries(downloadedFolders).map(([context, fileObj]) =>
+          [context, Object.entries(fileObj).map(([name, promise]) => {
+            promise.then(() => FileWatcher.watchFolder(<PATHTYPE>context, name, FS))
+            return name
+          })]
         )))
-      Object.entries(downloadedFolders).forEach(([context, fileObj]) =>
-        Object.entries(fileObj).forEach(([path, promise]) => promise.then(() => FileWatcher.watchFolder(<PATHTYPE>context, path, FS)))
-      )
     })
 
     on("syncFolder", async (_, context, folderName, upload) => {
