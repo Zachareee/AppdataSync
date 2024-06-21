@@ -2,29 +2,33 @@ import { promises as fs } from "fs"
 
 import { CloudProviderString, DIRECTORYTREE, PATHTYPE } from "../common"
 import { APPPATHS } from "./Paths"
+import { Abortable } from "./Abortable"
 
-export default class Config {
+export default class Config implements Abortable {
+    static inMemoryConfig: ConfigInterface
+
     static async readConfig(): Promise<ConfigInterface> {
-        return fs.readFile(APPPATHS.CONFIG_PATH, "ascii").then(data => JSON.parse(data)).catch(() => ({}))
+        if (Config.inMemoryConfig) return Config.inMemoryConfig
+        return Config.inMemoryConfig = {
+            provider: (await fs.readFile(APPPATHS.CONFIG_PATH, "ascii").then(data => JSON.parse(data)).catch(() => ({}))).provider, folders: {}
+        }
     }
 
-    static async writeConfig<T extends keyof ConfigInterface>(key: T, value: ConfigInterface[T]) {
-        return Config.readConfig().then(data => write(key, value, data)).catch(() => write(key, value))
+    static writeConfig<T extends keyof ConfigInterface>(key: T, value: ConfigInterface[T]) {
+        Config.inMemoryConfig = { ...Config.inMemoryConfig, [key]: value }
     }
 
-    static async addFolderToConfig(context: PATHTYPE, folderName: string) {
-        return Config.readConfig().then(config =>
-            write("folders", { ...(config.folders || {}), [context]: [...config.folders[context], folderName] }, { ...config }))
+    static addFolderToConfig(context: PATHTYPE, folderName: string) {
+        Config.inMemoryConfig.folders?.[context].push(folderName) || (Config.inMemoryConfig.folders[context] = [folderName])
     }
 
-    static async removeFolderFromConfig(context: PATHTYPE, folderName: string) {
-        return Config.readConfig().then(config =>
-            write("folders", { ...(config.folders || {}), [context]: config.folders[context].filter(folder => folder !== folderName) }, { ...config }))
+    static removeFolderFromConfig(context: PATHTYPE, folderName: string) {
+        Config.inMemoryConfig.folders[context] = Config.inMemoryConfig.folders[context].filter(name => name !== folderName)
     }
-}
 
-function write<T extends keyof ConfigInterface>(key: T, value: ConfigInterface[T], data = {}) {
-    return fs.writeFile(APPPATHS.CONFIG_PATH, JSON.stringify({ ...data, [key]: value }))
+    static async abort() {
+        return fs.writeFile(APPPATHS.CONFIG_PATH, JSON.stringify({ provider: Config.inMemoryConfig.provider }))
+    }
 }
 
 interface ConfigInterface {

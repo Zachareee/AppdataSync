@@ -99,7 +99,7 @@ app.on('activate', () => {
 
 app.on("before-quit", async e => {
   e.preventDefault()
-  await Promise.all((<typeof Abortable[]>[Jobs, FileWatcher]).map(abortable => abortable.abort()))
+  await Promise.all((<typeof Abortable[]>[Jobs, FileWatcher, Config]).map(abortable => abortable.abort()))
   app.exit()
 })
 
@@ -114,7 +114,7 @@ on("listAppdataFolders", async event => {
   Object.entries(APPDATA_PATHS).forEach(async ([folder, folderpath]) =>
     send(event.sender, "runOnFolderChange", <PATHTYPE>folder, await fs.readdir(folderpath))
   )
-  FileWatcher.watchAppdataRoots(async context => 
+  FileWatcher.watchAppdataRoots(async context =>
     send(event.sender, "runOnFolderChange", context, await fs.readdir(APPDATA_PATHS[context]))
   )
 })
@@ -148,27 +148,28 @@ on("logout", async (_, provider) => providerStringPairing[provider].logout())
 
 async function registerProvider(webContents: WebContents, provider: CloudProviderString) {
   return providerStringPairing[provider]?.init().then(async FS => {
+    const downloadedFoldersPromise = FS["downloadFolders"]()
     ipcMain.removeAllListeners("syncFolder").removeHandler("getSyncedFolders")
     await FileWatcher.unwatchAll()
 
-    Jobs.init(FS)
+    Jobs.FS = FS
     handle("getSyncedFolders", async () => await Config.readConfig().then(config => config.folders))
 
-    FS["downloadFolders"]().then(downloadedFolders => {
-      Config.writeConfig("folders", Object.fromEntries(
-        Object.entries(downloadedFolders).map(([context, fileObj]) =>
-          [context, Object.entries(fileObj).map(([name, promise]) => {
-            promise.then(() => FileWatcher.watchFolder(<PATHTYPE>context, name, FS))
-            return name
-          })]
-        )))
-    })
 
     on("syncFolder", async (_, context, folderName, upload) => {
       (upload ? [Config.addFolderToConfig, FileWatcher.watchFolder] : [Config.removeFolderFromConfig, FileWatcher.unwatchFolder])
         .forEach(func => func(context, folderName, FS))
       Jobs.add(context, folderName, upload)
     })
+
+    const downloadedFolders = await downloadedFoldersPromise
+    Config.writeConfig("folders", Object.fromEntries(
+      Object.entries(downloadedFolders).map(([context, fileObj]) =>
+        [context, Object.entries(fileObj).map(([name, promise]) => {
+          promise.then(() => FileWatcher.watchFolder(<PATHTYPE>context, name, FS))
+          return name
+        })]
+      )))
   }).then(() => send(webContents, "runOnProviderReply", provider))
     .catch(console.warn)
 }

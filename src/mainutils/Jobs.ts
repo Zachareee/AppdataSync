@@ -10,10 +10,6 @@ const jobs: Record<PATHTYPE, Record<string, Runner>> = { LOCAL: {}, LOCALLOW: {}
 export default class Jobs extends Abortable {
     static FS: typeof CloudProvider
 
-    static init(FS: typeof CloudProvider) {
-        Jobs.FS = FS
-    }
-
     static add(context: PATHTYPE, folderName: string, upload: boolean) {
         (jobs[context][folderName] || (jobs[context][folderName] = new Runner()))
             .push([context, folderName, upload])
