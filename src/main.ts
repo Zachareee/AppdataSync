@@ -8,7 +8,7 @@ import FileWatcher from './mainutils/FileWatcher';
 import { APPDATA_PATHS, APPPATHS } from './mainutils/Paths';
 import { providerStringPairing } from './mainutils/Utils';
 import Jobs from './mainutils/Jobs';
-import { Abortable } from './mainutils/Abortable';
+import Abortable from './mainutils/Abortable';
 
 // Handle creating/removing shortcuts on Windows when installing/uninstalling.
 if (require('electron-squirrel-startup')) {
@@ -99,7 +99,7 @@ app.on('activate', () => {
 
 app.on("before-quit", async e => {
   e.preventDefault()
-  await Promise.all((<typeof Abortable[]>[Jobs, FileWatcher, Config]).map(abortable => abortable.abort()))
+  await Promise.all((<Abortable[]>[Jobs, FileWatcher, Config]).map(abortable => abortable.abort()))
   app.exit()
 })
 

@@ -1,13 +1,11 @@
-import { notImplemented } from "../mainutils/Utils"
 import { PATHTYPE } from "../common"
 
 export type FILENAMEPROGRESSPAIR = Promise<Record<PATHTYPE, Record<string, Promise<unknown>>>>
 
-export class CloudProvider {
-    static async init(): Promise<typeof CloudProvider> { return notImplemented() }
-    static async abortAuth(): Promise<void> { return notImplemented() }
-    static async logout(): Promise<void> { return notImplemented() }
-    static async uploadFolder(context: PATHTYPE, folderName: string, upload: boolean):
-        Promise<void> { return notImplemented(context, folderName, upload) }
-    static async downloadFolders(): FILENAMEPROGRESSPAIR { return notImplemented() }
+export interface CloudProvider {
+    init(): Promise<CloudProvider>
+    abortAuth(): Promise<void>
+    logout(): Promise<void>
+    uploadFolder(context: PATHTYPE, folderName: string, upload: boolean): Promise<void>
+    downloadFolders(): FILENAMEPROGRESSPAIR
 }

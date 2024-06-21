@@ -4,13 +4,13 @@ import { PATHTYPE } from "../common";
 import { APPDATA_PATHS } from "./Paths";
 import { CloudProvider } from "../cloud/CloudProvider";
 import { promisifyObjectValues } from "./Utils";
-import { Abortable } from "./Abortable";
+import Abortable from "./Abortable";
 
 const watchedFiles = <Record<PATHTYPE, Record<string, FSWatcher>>>Object.fromEntries(PATHTYPE.map(context => [context, {}]))
 const appdataRoots = <Record<PATHTYPE, FSWatcher>>Object.fromEntries(PATHTYPE.map(context => [context, null]))
 
-export default class FileWatcher extends Abortable {
-    static watchAppdataRoots(func: (context: PATHTYPE) => void) {
+class FileWatcher implements Abortable {
+    watchAppdataRoots(func: (context: PATHTYPE) => void) {
         Object.entries(APPDATA_PATHS).forEach(([context, path]) =>
             appdataRoots[<PATHTYPE>context] = watch(path, {
                 ignoreInitial: true,
@@ -19,25 +19,27 @@ export default class FileWatcher extends Abortable {
         )
     }
 
-    static watchFolder(context: PATHTYPE, folderName: string, FS: typeof CloudProvider) {
+    watchFolder(context: PATHTYPE, folderName: string, FS: CloudProvider) {
         return watchedFiles[context][folderName] = watch(folderName, {
             cwd: APPDATA_PATHS[context],
             ignoreInitial: true
         }).on("all", () => FS.uploadFolder(context, folderName, true))
     }
 
-    static unwatchFolder(context: PATHTYPE, folderName: string) {
+    unwatchFolder(context: PATHTYPE, folderName: string) {
         return watchedFiles[context][folderName].close()
     }
 
-    static unwatchAll() {
+    unwatchAll() {
         return promisifyObjectValues(watchedFiles,
             contextGroup => promisifyObjectValues(contextGroup, watcher => watcher.close()))
     }
 
 
-    static override async abort() {
+    async abort() {
         await promisifyObjectValues(appdataRoots, watcher => watcher.close())
-        return FileWatcher.unwatchAll()
+        return this.unwatchAll()
     }
 }
+
+export default new FileWatcher()

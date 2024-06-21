@@ -1,5 +1,3 @@
-import { notImplemented } from "./Utils";
-
-export class Abortable {
-    static abort(): unknown { return notImplemented() }
+export default interface Abortable {
+    abort(): Promise<unknown>
 }

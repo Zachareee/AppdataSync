@@ -2,34 +2,36 @@ import { promises as fs } from "fs"
 
 import { CloudProviderString, DIRECTORYTREE, PATHTYPE } from "../common"
 import { APPPATHS } from "./Paths"
-import { Abortable } from "./Abortable"
+import Abortable from "./Abortable"
 
-export default class Config implements Abortable {
-    static inMemoryConfig: ConfigInterface
+class Config implements Abortable {
+    inMemoryConfig: ConfigInterface
 
-    static async readConfig(): Promise<ConfigInterface> {
-        if (Config.inMemoryConfig) return Config.inMemoryConfig
-        return Config.inMemoryConfig = {
+    async readConfig(): Promise<ConfigInterface> {
+        if (this.inMemoryConfig) return this.inMemoryConfig
+        return this.inMemoryConfig = {
             provider: (await fs.readFile(APPPATHS.CONFIG_PATH, "ascii").then(data => JSON.parse(data)).catch(() => ({}))).provider, folders: {}
         }
     }
 
-    static writeConfig<T extends keyof ConfigInterface>(key: T, value: ConfigInterface[T]) {
-        Config.inMemoryConfig = { ...Config.inMemoryConfig, [key]: value }
+    writeConfig<T extends keyof ConfigInterface>(key: T, value: ConfigInterface[T]) {
+        this.inMemoryConfig = { ...this.inMemoryConfig, [key]: value }
     }
 
-    static addFolderToConfig(context: PATHTYPE, folderName: string) {
-        Config.inMemoryConfig.folders?.[context].push(folderName) || (Config.inMemoryConfig.folders[context] = [folderName])
+    addFolderToConfig(context: PATHTYPE, folderName: string) {
+        this.inMemoryConfig.folders?.[context].push(folderName) || (this.inMemoryConfig.folders[context] = [folderName])
     }
 
-    static removeFolderFromConfig(context: PATHTYPE, folderName: string) {
-        Config.inMemoryConfig.folders[context] = Config.inMemoryConfig.folders[context].filter(name => name !== folderName)
+    removeFolderFromConfig(context: PATHTYPE, folderName: string) {
+        this.inMemoryConfig.folders[context] =this.inMemoryConfig.folders[context].filter(name => name !== folderName)
     }
 
-    static async abort() {
-        return fs.writeFile(APPPATHS.CONFIG_PATH, JSON.stringify({ provider: Config.inMemoryConfig.provider }))
+    async abort() {
+        return fs.writeFile(APPPATHS.CONFIG_PATH, JSON.stringify({ provider: this.inMemoryConfig.provider }))
     }
 }
+
+export default new Config()
 
 interface ConfigInterface {
     provider: CloudProviderString,

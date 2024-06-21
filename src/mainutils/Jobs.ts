@@ -3,23 +3,26 @@ import { Readable } from "stream"
 import { CloudProvider } from "../cloud/CloudProvider";
 import { PATHTYPE } from "../common";
 import { promisifyObjectValues } from "./Utils";
-import { Abortable } from "./Abortable";
+import Abortable from "./Abortable";
 
 const jobs: Record<PATHTYPE, Record<string, Runner>> = { LOCAL: {}, LOCALLOW: {}, ROAMING: {} }
 
-export default class Jobs extends Abortable {
-    static FS: typeof CloudProvider
+class Jobs implements Abortable {
+    FS: CloudProvider
 
-    static add(context: PATHTYPE, folderName: string, upload: boolean) {
+    add(context: PATHTYPE, folderName: string, upload: boolean) {
         (jobs[context][folderName] || (jobs[context][folderName] = new Runner()))
             .push([context, folderName, upload])
     }
 
-    static override abort() {
+    async abort() {
         return promisifyObjectValues(jobs,
             obj => promisifyObjectValues(obj, entry => entry.abort()))
     }
 }
+
+const jobsObj = new Jobs()
+export default jobsObj
 
 class Runner {
     queue: Readable
@@ -29,7 +32,7 @@ class Runner {
         this.queue._read = () => null
         this.queue.on("data", async arr => {
             this.queue.pause()
-            await Jobs.FS.uploadFolder(...<uploadFolderOpts>arr)
+            await jobsObj.FS.uploadFolder(...<uploadFolderOpts>arr)
             this.queue.resume()
         })
     }
