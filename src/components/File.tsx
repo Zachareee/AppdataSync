@@ -1,10 +1,12 @@
-import { useState } from "react"
+import { useContext, useState } from "react"
 import MidButton from "./MidButton"
+import { SyncContext } from "./AppdataFolder"
 
-export default function File({ name, clicked, syncFunc }: {
-    name: string, clicked: boolean, syncFunc(name: string, bool: boolean): void
+export default function File({ name, clicked }: {
+    name: string, clicked: boolean
 }) {
     const [checked, setChecked] = useState(clicked)
+    const { syncFunc }: { syncFunc(name: string, bool: boolean): void } = useContext(SyncContext)
 
     function click() {
         setChecked(bool => {

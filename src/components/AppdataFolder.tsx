@@ -1,10 +1,12 @@
-import { useState } from "react";
+import { createContext, useState } from "react";
 
 import Folders from "./Folders";
 import { CloudProviderString, PATHTYPE, drives } from "../common";
 import { Folder } from "../pages/Home";
 import { getSyncedFolders, listAppdataFolders, runOnFolderChange, syncFolder } from "./windowutils";
 import FolderSelector from "./FolderSelector";
+
+export const SyncContext = createContext(null)
 
 export default function AppdataFolder({ provider, showFolder }: {
     provider: CloudProviderString, showFolder: PATHTYPE
@@ -28,9 +30,11 @@ export default function AppdataFolder({ provider, showFolder }: {
             <span className="text-slate-300">Current provider: {drives[provider as CloudProviderString].driveName}</span>
             {showFolder && <span className="text-slate-300">Now in {showFolder}</span>}
             <div className="no-drag overflow-auto">
-                {showFolder
-                    ? <Folders syncFunc={syncFunc} contents={appdataFolders[showFolder]} />
-                    : <FolderSelector />}
+                <SyncContext.Provider value={{ syncFunc }}>
+                    {showFolder
+                        ? <Folders contents={appdataFolders[showFolder]} />
+                        : <FolderSelector />}
+                </SyncContext.Provider>
             </div>
         </div>
     )

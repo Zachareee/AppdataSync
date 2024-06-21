@@ -1,12 +1,12 @@
 import File from "./File"
 import { Folder } from "../pages/Home"
 
-export default function Folders({ syncFunc, contents }: {
-    contents: Folder, syncFunc(name: string, bool: boolean): void,
+export default function Folders({ contents }: {
+    contents: Folder
 }) {
 
     return (
         contents.map(({ name, checked }, key) =>
-            <File key={key} name={name} clicked={checked} syncFunc={syncFunc} />)
+            <File key={key} name={name} clicked={checked} />)
     )
 }
