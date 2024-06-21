@@ -1,23 +1,18 @@
-import { useContext, useState } from "react"
+import { useContext } from "react"
 import MidButton from "./MidButton"
 import { SyncContext } from "./AppdataFolder"
 
-export default function File({ name, clicked }: {
-    name: string, clicked: boolean
-}) {
-    const [checked, setChecked] = useState(clicked)
+export default function File({ name, clicked, updateFunc }:
+    { name: string, clicked: boolean, updateFunc(checked: boolean): void }) {
     const { syncFunc }: { syncFunc(name: string, bool: boolean): void } = useContext(SyncContext)
 
     function click() {
-        setChecked(bool => {
-            bool = !bool
-            syncFunc(name, bool)
-            return bool
-        })
+        updateFunc(!clicked)
+        syncFunc(name, !clicked)
     }
 
-    return <MidButton onClick={click} clicked={checked}>
+    return <MidButton onClick={click} clicked={clicked}>
         <span>{name}</span>
-        <input type="checkbox" className="rounded-full size-8 cursor-pointer" onFocus={(e) => e.target.blur()} checked={checked} readOnly />
+        <input type="checkbox" className="rounded-full size-8 cursor-pointer" onFocus={(e) => e.target.blur()} checked={clicked} readOnly />
     </MidButton>
 }

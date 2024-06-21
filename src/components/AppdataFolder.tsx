@@ -21,6 +21,10 @@ export default function AppdataFolder({ provider, showFolder }: {
         )
     })
 
+    function updateFolder(context: PATHTYPE, folder: Folder) {
+        setAppdataFolders(appdata => ({ ...appdata, [context]: folder }))
+    }
+
     function syncFunc(name: string, bool: boolean) {
         return syncFolder(showFolder, name, bool)
     }
@@ -32,7 +36,7 @@ export default function AppdataFolder({ provider, showFolder }: {
             <div className="no-drag overflow-auto">
                 <SyncContext.Provider value={{ syncFunc }}>
                     {showFolder
-                        ? <Folders contents={appdataFolders[showFolder]} />
+                        ? <Folders contents={appdataFolders[showFolder]} updateFunc={folder => updateFolder(showFolder, folder)}/>
                         : <FolderSelector />}
                 </SyncContext.Provider>
             </div>
