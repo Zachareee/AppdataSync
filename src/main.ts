@@ -9,6 +9,7 @@ import { APPDATA_PATHS, APPPATHS } from './mainutils/Paths';
 import { providerStringPairing } from './mainutils/Utils';
 import Jobs from './mainutils/Jobs';
 import Abortable from './mainutils/Abortable';
+import Notifs from './mainutils/Notifs';
 
 // Handle creating/removing shortcuts on Windows when installing/uninstalling.
 if (require('electron-squirrel-startup')) {
@@ -21,7 +22,7 @@ let window: BrowserWindow;
 if (!lock) app.quit()
 else app.on("second-instance", () => { window?.restore(); window?.focus() })
 
-const ICON = path.join(__dirname, "icon.png")
+export const ICON = path.join(__dirname, "icon.png")
 
 const createWindow = () => {
   // Create the browser window.
@@ -42,17 +43,6 @@ const createWindow = () => {
     show: false
   });
 
-  const tray = new Tray(ICON).on("double-click", () => mainWindow.show())
-
-  tray.setContextMenu(Menu.buildFromTemplate([
-    {
-      label: "Open window", click: () => mainWindow.show()
-    },
-    {
-      label: "Quit", click: () => { app.quit(); mainWindow.destroy() }
-    }
-  ]))
-
   // and load the index.html of the app.
   if (MAIN_WINDOW_VITE_DEV_SERVER_URL) {
     mainWindow.loadURL(MAIN_WINDOW_VITE_DEV_SERVER_URL);
@@ -65,8 +55,8 @@ const createWindow = () => {
     mainWindow.show()
   })
 
-  mainWindow.on("close", e => {
-    e.preventDefault()
+  mainWindow.on("minimize", () => {
+    Notifs.showNotification("minimise")
     mainWindow.hide()
   })
 
@@ -78,7 +68,22 @@ const createWindow = () => {
 // This method will be called when Electron has finished
 // initialization and is ready to create browser windows.
 // Some APIs can only be used after this event occurs.
-app.on('ready', () => (window = createWindow()));
+app.on('ready', () => {
+  window = createWindow()
+
+  const tray = new Tray(ICON).on("double-click", () => window.show())
+
+  tray.setContextMenu(Menu.buildFromTemplate([
+    {
+      label: "Open window", click: () => window.show()
+    },
+    {
+      label: "Quit", click: () => { app.quit(); window.destroy() }
+    }
+  ]))
+
+  Notifs.init()
+});
 
 // Quit when all windows are closed, except on macOS. There, it's common
 // for applications and their menu bar to stay active until the user quits
@@ -153,12 +158,12 @@ async function registerProvider(webContents: WebContents, provider: CloudProvide
     await FileWatcher.unwatchAll()
 
     Jobs.FS = FS
-    handle("getSyncedFolders", async () => await Config.readConfig().then(config => config.folders))
+    handle("getSyncedFolders", async () => Config.readConfig().then(config => config.folders))
 
 
     on("syncFolder", async (_, context, folderName, upload) => {
       (upload ? [Config.addFolderToConfig, FileWatcher.watchFolder] : [Config.removeFolderFromConfig, FileWatcher.unwatchFolder])
-        .forEach(func => func(context, folderName, FS))
+        .forEach(func => func(context, folderName))
       Jobs.add(context, folderName, upload)
     })
 
@@ -166,7 +171,8 @@ async function registerProvider(webContents: WebContents, provider: CloudProvide
     Config.writeConfig("folders", Object.fromEntries(
       Object.entries(downloadedFolders).map(([context, fileObj]) =>
         [context, Object.entries(fileObj).map(([name, promise]) => {
-          promise.then(() => FileWatcher.watchFolder(<PATHTYPE>context, name, FS))
+          console.log("Running", name)
+          promise.then(async () => { FileWatcher.watchFolder(<PATHTYPE>context, name); console.log("Done with", name); })
           return name
         })]
       )))

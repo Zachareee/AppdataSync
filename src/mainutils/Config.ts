@@ -3,6 +3,7 @@ import { promises as fs } from "fs"
 import { CloudProviderString, DIRECTORYTREE, PATHTYPE } from "../common"
 import { APPPATHS } from "./Paths"
 import Abortable from "./Abortable"
+import Notifs from "./Notifs"
 
 class Config implements Abortable {
     inMemoryConfig: ConfigInterface
@@ -10,7 +11,9 @@ class Config implements Abortable {
     async readConfig(): Promise<ConfigInterface> {
         if (this.inMemoryConfig) return this.inMemoryConfig
         return this.inMemoryConfig = {
-            provider: (await fs.readFile(APPPATHS.CONFIG_PATH, "ascii").then(data => JSON.parse(data)).catch(() => ({}))).provider, folders: {}
+            provider: (await fs.readFile(APPPATHS.CONFIG_PATH, "ascii").then(data => JSON.parse(data)).catch(() => ({}))).provider,
+            folders: {},
+            disallowedNotifs: []
         }
     }
 
@@ -23,7 +26,11 @@ class Config implements Abortable {
     }
 
     removeFolderFromConfig(context: PATHTYPE, folderName: string) {
-        this.inMemoryConfig.folders[context] =this.inMemoryConfig.folders[context].filter(name => name !== folderName)
+        this.inMemoryConfig.folders[context] = this.inMemoryConfig.folders[context].filter(name => name !== folderName)
+    }
+
+    notifAllowed(template: keyof typeof Notifs.notifTemplates) {
+        return !this.inMemoryConfig.disallowedNotifs.includes(template)
     }
 
     async abort() {
@@ -35,5 +42,6 @@ export default new Config()
 
 interface ConfigInterface {
     provider: CloudProviderString,
-    folders: Partial<DIRECTORYTREE>
+    folders: Partial<DIRECTORYTREE>,
+    disallowedNotifs: (keyof typeof Notifs.notifTemplates)[],
 }
