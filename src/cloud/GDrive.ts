@@ -41,7 +41,7 @@ class GDrive implements CloudProvider {
     // create if it doesn't
     async uploadFolder(context: PATHTYPE, name: string, upload: boolean) {
         return this.gDrive.files.list({
-            q: `name = '${name}.gzip' and '${this.folderMapping[context]}' in parents and trashed = false`,
+            q: `name = '${name.replace(/'/g, "\\'")}.gzip' and '${this.folderMapping[context]}' in parents and trashed = false`,
             pageSize: 1,
             fields: "files(id)"
         }).then(res => res.data.files).then(async arr => {
@@ -116,7 +116,7 @@ class GDrive implements CloudProvider {
                 mimeType: FILETYPE.FOLDER
             }, fields: "id"
         }).then(async ({ data: { id: parentID } }) => Object.fromEntries(await Promise.all(
-            PATHTYPE.map(name =>this.gDrive.files.create({
+            PATHTYPE.map(name => this.gDrive.files.create({
                 requestBody: {
                     name,
                     parents: [parentID],
@@ -127,7 +127,7 @@ class GDrive implements CloudProvider {
     }
 
     private async updateFile(context: PATHTYPE, pathName: string, id: string) {
-        return this.createUploadBody(context, pathName, id).then(body =>this.gDrive.files.update(body))
+        return this.createUploadBody(context, pathName, id).then(body => this.gDrive.files.update(body))
     }
 
     private async deleteFile(fileId: string) {
@@ -135,7 +135,7 @@ class GDrive implements CloudProvider {
     }
 
     private async createFile(context: PATHTYPE, pathName: string) {
-        return this.createUploadBody(context, pathName).then(body =>this.gDrive.files.create(body))
+        return this.createUploadBody(context, pathName).then(body => this.gDrive.files.create(body))
     }
 
     private async createUploadBody(context: PATHTYPE, pathName: string, fileId: string): Promise<drive_v3.Params$Resource$Files$Update>

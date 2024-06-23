@@ -1,4 +1,5 @@
 import { Readable } from "stream"
+import { isEqual } from "lodash"
 
 import { CloudProvider } from "../cloud/CloudProvider";
 import { PATHTYPE } from "../common";
@@ -25,6 +26,7 @@ const jobsObj = new Jobs()
 export default jobsObj
 
 class Runner {
+    lastRequest: uploadFolderOpts
     queue: Readable
 
     constructor() {
@@ -32,7 +34,10 @@ class Runner {
         this.queue._read = () => null
         this.queue.on("data", async arr => {
             this.queue.pause()
-            await jobsObj.FS.uploadFolder(...<uploadFolderOpts>arr)
+            if (!isEqual(this.lastRequest, arr)) {
+                await jobsObj.FS.uploadFolder(...<uploadFolderOpts>arr)
+                this.lastRequest = arr
+            }
             this.queue.resume()
         })
     }

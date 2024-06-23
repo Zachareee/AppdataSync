@@ -43,9 +43,11 @@
   "dependencies": {
     "@google-cloud/local-auth": "^3.0.1",
     "@googleapis/drive": "^8.8.0",
+    "@types/lodash": "^4.17.5",
     "autoprefixer": "^10.4.19",
     "electron-squirrel-startup": "^1.0.1",
     "google-auth-library": "^9.10.0",
+    "lodash": "^4.17.21",
     "node-watch": "^0.7.4",
     "postcss": "^8.4.38",
     "react": "^18.3.1",

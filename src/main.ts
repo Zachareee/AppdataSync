@@ -51,7 +51,8 @@ const createWindow = () => {
   }
 
   mainWindow.webContents.once("did-finish-load", () => {
-    Config.readConfig().then(({ provider }) => registerProvider(mainWindow.webContents, provider))
+    Config.readConfig().then(({ provider }) =>
+      registerProvider(mainWindow.webContents.send.bind(mainWindow.webContents), provider))
     mainWindow.show()
   })
 
@@ -117,17 +118,17 @@ fs.mkdir(APPPATHS.TOKEN_FOLDER, { recursive: true })
 // Read Appdata folders
 on("listAppdataFolders", async event => {
   Object.entries(APPDATA_PATHS).forEach(async ([folder, folderpath]) =>
-    send(event.sender, "runOnFolderChange", <PATHTYPE>folder, await fs.readdir(folderpath))
+    send(event.reply.bind(event), "runOnFolderChange", <PATHTYPE>folder, await fs.readdir(folderpath))
   )
   FileWatcher.watchAppdataRoots(async context =>
-    send(event.sender, "runOnFolderChange", context, await fs.readdir(APPDATA_PATHS[context]))
+    send(event.reply.bind(event), "runOnFolderChange", context, await fs.readdir(APPDATA_PATHS[context]))
   )
 })
 
 // Registers cloud methods
 on("requestProvider", async (event, provider) => {
   Config.writeConfig("provider", provider)
-  return registerProvider(event.sender, provider)
+  return registerProvider(event.reply.bind(event), provider)
 })
 
 handle("accountsAuthed", async () => {
@@ -151,19 +152,20 @@ on("abortAuthentication", async () => {
 
 on("logout", async (_, provider) => providerStringPairing[provider].logout())
 
-async function registerProvider(webContents: WebContents, provider: CloudProviderString) {
+async function registerProvider(sendFunc: WebContents["send"], provider: CloudProviderString) {
   return providerStringPairing[provider]?.init().then(async FS => {
     const downloadedFoldersPromise = FS["downloadFolders"]()
     ipcMain.removeAllListeners("syncFolder").removeHandler("getSyncedFolders")
     await FileWatcher.unwatchAll()
 
     Jobs.FS = FS
-    FileWatcher.FS = FS
     handle("getSyncedFolders", async () => Config.readConfig().then(config => config.folders))
 
 
     on("syncFolder", async (_, context, folderName, upload) => {
-      (upload ? [Config.addFolderToConfig, FileWatcher.watchFolder] : [Config.removeFolderFromConfig, FileWatcher.unwatchFolder])
+      (upload
+        ? [Config.addFolderToConfig.bind(Config), FileWatcher.watchFolder.bind(FileWatcher)]
+        : [Config.removeFolderFromConfig.bind(Config), FileWatcher.unwatchFolder.bind(FileWatcher)])
         .forEach(func => func(context, folderName))
       Jobs.add(context, folderName, upload)
     })
@@ -176,12 +178,12 @@ async function registerProvider(webContents: WebContents, provider: CloudProvide
           return name
         })]
       )))
-  }).then(() => send(webContents, "runOnProviderReply", provider))
+  }).then(() => send(sendFunc, "runOnProviderReply", provider))
     .catch(console.warn)
 }
 
-function send<T extends MtRSignals>(webContents: WebContents, signal: T, ...args: callbackFunc<T>) {
-  return webContents.send(signal, ...args)
+function send<T extends MtRSignals>(func: WebContents["send"], signal: T, ...args: callbackFunc<T>) {
+  return func(signal, ...args)
 }
 
 function handle<T extends RtMSignals>(signal: T, func: listenFunc<T, "handle">) {

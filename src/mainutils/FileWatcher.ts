@@ -4,16 +4,14 @@ import { FSWatcher } from "fs";
 
 import { PATHTYPE } from "../common";
 import { APPDATA_PATHS } from "./Paths";
-import { CloudProvider } from "../cloud/CloudProvider";
 import { promisifyObjectValues } from "./Utils";
 import Abortable from "./Abortable";
+import Jobs from "./Jobs";
 
 const watchedFiles = <Record<PATHTYPE, Record<string, FSWatcher>>>Object.fromEntries(PATHTYPE.map(context => [context, {}]))
 const appdataRoots = <Record<PATHTYPE, FSWatcher>>Object.fromEntries(PATHTYPE.map(context => [context, null]))
 
 class FileWatcher implements Abortable {
-    FS: CloudProvider
-
     watchAppdataRoots(func: (context: PATHTYPE) => void) {
         Object.entries(APPDATA_PATHS).forEach(([context, path]) =>
             appdataRoots[<PATHTYPE>context] = watch(path, () => func(<PATHTYPE>context))
@@ -23,7 +21,7 @@ class FileWatcher implements Abortable {
     watchFolder(context: PATHTYPE, folderName: string) {
         return watchedFiles[context][folderName] = watch(join(APPDATA_PATHS[context], folderName), {
             recursive: true
-        }, () => this.FS.uploadFolder(context, folderName, true))
+        }, () => Jobs.add(context, folderName, true))
     }
 
     unwatchFolder(context: PATHTYPE, folderName: string) {
