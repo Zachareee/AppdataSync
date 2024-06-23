@@ -158,6 +158,7 @@ async function registerProvider(webContents: WebContents, provider: CloudProvide
     await FileWatcher.unwatchAll()
 
     Jobs.FS = FS
+    FileWatcher.FS = FS
     handle("getSyncedFolders", async () => Config.readConfig().then(config => config.folders))
 
 
@@ -171,8 +172,7 @@ async function registerProvider(webContents: WebContents, provider: CloudProvide
     Config.writeConfig("folders", Object.fromEntries(
       Object.entries(downloadedFolders).map(([context, fileObj]) =>
         [context, Object.entries(fileObj).map(([name, promise]) => {
-          console.log("Running", name)
-          promise.then(async () => { FileWatcher.watchFolder(<PATHTYPE>context, name); console.log("Done with", name); })
+          promise.then(() => FileWatcher.watchFolder(<PATHTYPE>context, name))
           return name
         })]
       )))

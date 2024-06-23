@@ -1,4 +1,6 @@
-import { FSWatcher, watch } from "chokidar"
+import watch from "node-watch"
+import { join } from "path"
+import { FSWatcher } from "fs";
 
 import { PATHTYPE } from "../common";
 import { APPDATA_PATHS } from "./Paths";
@@ -10,20 +12,18 @@ const watchedFiles = <Record<PATHTYPE, Record<string, FSWatcher>>>Object.fromEnt
 const appdataRoots = <Record<PATHTYPE, FSWatcher>>Object.fromEntries(PATHTYPE.map(context => [context, null]))
 
 class FileWatcher implements Abortable {
+    FS: CloudProvider
+
     watchAppdataRoots(func: (context: PATHTYPE) => void) {
         Object.entries(APPDATA_PATHS).forEach(([context, path]) =>
-            appdataRoots[<PATHTYPE>context] = watch(path, {
-                ignoreInitial: true,
-                depth: 0
-            }).on("all", () => func(<PATHTYPE>context))
+            appdataRoots[<PATHTYPE>context] = watch(path, () => func(<PATHTYPE>context))
         )
     }
 
-    watchFolder(context: PATHTYPE, folderName: string, FS: CloudProvider) {
-        return watchedFiles[context][folderName] = watch(folderName, {
-            cwd: APPDATA_PATHS[context],
-            ignoreInitial: true
-        }).on("all", () => FS.uploadFolder(context, folderName, true))
+    watchFolder(context: PATHTYPE, folderName: string) {
+        return watchedFiles[context][folderName] = watch(join(APPDATA_PATHS[context], folderName), {
+            recursive: true
+        }, () => this.FS.uploadFolder(context, folderName, true))
     }
 
     unwatchFolder(context: PATHTYPE, folderName: string) {
