@@ -1,6 +1,5 @@
-import watch from "node-watch"
 import { join } from "path"
-import { FSWatcher } from "fs";
+import { watch, FSWatcher } from "fs";
 
 import { PATHTYPE } from "../common";
 import { APPDATA_PATHS } from "./Paths";
@@ -19,9 +18,13 @@ class FileWatcher implements Abortable {
     }
 
     watchFolder(context: PATHTYPE, folderName: string) {
-        return watchedFiles[context][folderName] = watch(join(APPDATA_PATHS[context], folderName), {
+        const watcher = watch(join(APPDATA_PATHS[context], folderName), {
             recursive: true
-        }, () => Jobs.add(context, folderName, true))
+        })
+        watchedFiles[context][folderName] = watcher
+            .on("ready", () => ["change", "rename"].forEach(
+                e => watcher.on(e, () => Jobs.add(context, folderName, true))
+            ))
     }
 
     unwatchFolder(context: PATHTYPE, folderName: string) {
