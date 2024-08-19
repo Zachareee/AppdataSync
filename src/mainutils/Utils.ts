@@ -3,7 +3,7 @@ import GDrive from "../cloud/GDrive";
 import { CloudProviderString } from "../common";
 
 export const providerStringPairing: Record<CloudProviderString, CloudProvider> = {
-    googleDrive: GDrive
+    googleDrive: new GDrive()
 }
 
 export function promisifyObjectValues<V, R>(object: Record<never, V>, func: (param: V) => R) {

@@ -38,7 +38,7 @@ class FileWatcher implements Abortable {
 
 
     async abort() {
-        await promisifyObjectValues(appdataRoots, watcher => watcher.close())
+        await promisifyObjectValues(appdataRoots, watcher => watcher?.close())
         return this.unwatchAll()
     }
 }

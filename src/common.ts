@@ -27,6 +27,7 @@ export interface RendToMainCalls {
 export interface MainToRendCalls {
     runOnProviderReply(callback: (provider: CloudProviderString) => void): void
     runOnFolderChange(callback: (context: PATHTYPE, files: DIRECTORYTREE[PATHTYPE]) => void): void
+    runOnLoading(callback: () => void): void
 }
 
 export type RtMSignals = keyof RendToMainCalls

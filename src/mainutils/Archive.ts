@@ -23,8 +23,12 @@ export default class Archive {
                     Promise.all(files.map(file => fs.stat(file)))
                         .then(files => files.filter(stat => stat.isFile()).map(({ mtime }) => mtime))
                         .then(files => files.reduce(
-                            (stat1, stat2) => stat1 > stat2 ? stat1 : stat2, new Date(1970, 0)
+                            (date1, date2) => date1 > date2 ? date1 : date2, new Date(1970, 0)
                         ))
+                        .then(date => {
+                            date.setMilliseconds(0)
+                            return date
+                        })
                 )
             })
         })

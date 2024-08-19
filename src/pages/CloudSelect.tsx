@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
-import { abortAuthentication, accountsAuthed, requestProvider, runOnProviderReply } from "../components/windowutils";
+import { abortAuthentication, accountsAuthed, requestProvider, runOnLoading, runOnProviderReply } from "../components/windowutils";
 import { CloudProviderString, drives } from "../common";
 import { homePath } from "./Home";
 import CloudEntry from "../components/CloudEntry";
@@ -11,7 +11,8 @@ export default function CloudSelect() {
     const [loading, setLoading] = useState(false)
     const [authed, setAuthed] = useState<CloudProviderString[]>([])
 
-    runOnProviderReply((provider: CloudProviderString) => gotoHome(provider))
+    runOnProviderReply(provider => gotoHome(provider))
+    runOnLoading(() => setLoading(true))
 
     useEffect(() => {
         accountsAuthed().then(setAuthed)

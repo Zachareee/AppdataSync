@@ -24,6 +24,9 @@ const mtr: MainToRendCalls = {
             callback(...args)
         )
     },
+    runOnLoading(callback) {
+        on("runOnLoading", callback)
+    },
 }
 
 contextBridge.exposeInMainWorld("RTM", rtm)

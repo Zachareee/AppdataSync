@@ -33,7 +33,7 @@ class GDrive implements CloudProvider {
     }
 
     async logout() {
-        this.authClient.revokeCredentials()
+        this.authClient.revokeCredentials().catch(console.warn)
         fs.rm(TOKEN_PATH)
     }
 
@@ -64,10 +64,11 @@ class GDrive implements CloudProvider {
     private async downloadFolder(context: PATHTYPE, { id: fileId, modifiedTime, name }: drive_v3.Schema$File) {
         const nameWithoutFileExt = name.replace(FILE_EXTENSION, "")
         const onlineModTime = new Date(modifiedTime)
+        onlineModTime.setMilliseconds(0)
         const offlineModTime = await Archive.getLastModDate(path.join(APPDATA_PATHS[context], nameWithoutFileExt)).catch(() => new Date(1970, 0))
 
         if (onlineModTime < offlineModTime) return this.uploadFolder(context, nameWithoutFileExt, true)
-        else if (onlineModTime > offlineModTime) {
+        if (onlineModTime > offlineModTime) {
             console.log("Now downloading ", name)
             return this.gDrive.files.get({ fileId, alt: "media" }, { responseType: "stream" }).then(
                 ({ data }) => Archive.extractArchive(context, data)
@@ -159,7 +160,7 @@ class GDrive implements CloudProvider {
     }
 }
 
-export default new GDrive()
+export default GDrive
 
 enum FILETYPE {
     FOLDER = "application/vnd.google-apps.folder"

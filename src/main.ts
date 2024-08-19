@@ -51,8 +51,12 @@ const createWindow = () => {
   }
 
   mainWindow.webContents.once("did-finish-load", () => {
-    Config.readConfig().then(({ provider }) =>
-      registerProvider(mainWindow.webContents.send.bind(mainWindow.webContents), provider))
+    Config.readConfig().then(({ provider }) => {
+      if (provider) {
+        send(mainWindow.webContents.send.bind(mainWindow.webContents), "runOnLoading")
+        registerProvider(mainWindow.webContents.send.bind(mainWindow.webContents), provider)
+      }
+    })
     mainWindow.show()
   })
 
@@ -178,8 +182,10 @@ async function registerProvider(sendFunc: WebContents["send"], provider: CloudPr
           return name
         })]
       )))
-  }).then(() => send(sendFunc, "runOnProviderReply", provider))
-    .catch(console.warn)
+    send(sendFunc, "runOnProviderReply", provider)
+  }).catch(() => {
+    providerStringPairing[provider].logout()
+  })
 }
 
 function send<T extends MtRSignals>(func: WebContents["send"], signal: T, ...args: callbackFunc<T>) {
